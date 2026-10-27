@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: inventario-taller
+  datasource:
+    url: ${POSTGRES_URL}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    open-in-view: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+  mvc:
+    apiversion:
+      supported: ${API_VERSIONS_SUPPORTED}
+      use:
+        header: ${API_VERSION_HEADER}
+
+server:
+  port: ${SERVER_PORT}
+  
+
+jwt:
+  expiration: ${JWT_EXPIRACION_SEGUNDOS}
+
+internal:
+  api:
+    secret: ${JWT_SECRET}
+    key: ${INTERNAL_API_KEY}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
