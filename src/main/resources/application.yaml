@@ -21,15 +21,11 @@ spring:
 
 server:
   port: ${SERVER_PORT}
-  
+
 
 jwt:
   expiration: ${JWT_EXPIRACION_SEGUNDOS}
-
-internal:
-  api:
-    secret: ${JWT_SECRET}
-    key: ${INTERNAL_API_KEY}
+  secret: ${JWT_SECRET}
 
 management:
   endpoints:

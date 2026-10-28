@@ -33,7 +33,7 @@ Todos los módulos se ejecutan en el mismo proceso y comparten la misma base de 
 | Consultas y Reportes | M400 | Reportes, exportación, dashboard y estadísticas | US-17 a US-23 | M100, M200, M300, SEC |
 | Transversal | — | README, Swagger y criterio de pruebas unitarias | US-26 | Todos |
 
-Todos los módulos dependen de SEC para autenticar y autorizar las peticiones (`JwtAuthenticationFilter`).
+Todos los módulos dependen de SEC para autenticar y autorizar las peticiones (`JwtAuthFilter`).
 
 ## **Tecnologías y herramientas**
 
@@ -59,7 +59,7 @@ Con el objetivo de garantizar consistencia, legibilidad y mantenibilidad del có
 
 ### **Nomenclatura y formato de nombres**
 
-- **Variables de entorno:** UPPER_SNAKE_CASE (ej: `DATASOURCE_URL`, `JWT_SECRET`, `INTERNAL_API_KEY`, `SERVER_PORT`). Deben ser descriptivas, sin espacios y compuestas únicamente por letras, números y guiones bajos.
+- **Variables de entorno:** UPPER_SNAKE_CASE (ej: `DATASOURCE_URL`, `JWT_SECRET`, `ADMIN_USERNAME`, `SERVER_PORT`). Deben ser descriptivas, sin espacios y compuestas únicamente por letras, números y guiones bajos.
 - **Código Java:** clases en PascalCase, métodos y variables en camelCase, constantes en MAYUSCULAS. Todo el código y los identificadores deben estar en **inglés**.
 - **Base de datos:** tablas y columnas en snake_case en minúsculas (ej: `movimiento_inventario`, `stock_actual`).
 
@@ -103,7 +103,7 @@ Listado consolidado de las reglas de negocio (RN) del sistema, con el módulo al
 | RN104 | `stockMinimo` numérico >= 0 | M100 (también M300) | US-04, US-08, US-14 |
 | RN105 | Cada producto debe tener un `proveedorPrincipal` activo | M100 | US-04, US-05 |
 | RN106 | El stock inicial de un producto nuevo es **0**. No se permite editar el stock desde el formulario de producto (solo por movimientos) | M100 | US-04 |
-| RN107 | Solo el Jefe de taller podrá administrar productos, categorías y proveedores; el mecánico no podrá modificar estos catálogos. Si el token tiene `role=MECANICO`, los endpoints `/api/productos/guardar`, `/api/categorias/guardar` y `/api/proveedores/guardar` deben devolver `403 FORBIDDEN` | SEC | US-02, US-03 |
+| RN107 | Solo el Jefe de taller podrá administrar productos, categorías y proveedores; el mecánico no podrá modificar estos catálogos. Si el usuario autenticado tiene rol `MECANICO`, los endpoints `/api/productos/guardar`, `/api/categorias/guardar` y `/api/proveedores/guardar` deben devolver `403 FORBIDDEN` | SEC | US-02, US-03 |
 | RN108 | Los productos con movimientos históricos (registros en `movimiento_inventario`) **no** se pueden eliminar físicamente. Solo desactivación lógica (`activo = false`) | M100 | US-04 |
 | RN109 | El RUC del proveedor (`ruc` o código de identificación) debe ser único | M100 | US-02, US-05 |
 | RN201 | El Jefe de taller (rol `JEFE_TALLER`) registra la entrada con producto, proveedor, cantidad y costo unitario. El sistema asigna fecha y usuario automáticamente | M200 | US-06 |
@@ -131,32 +131,32 @@ Además, el módulo SEC describe dos reglas sin número de RN: la validación de
 
 ### **Descripción**
 
-Gestiona el registro y la autenticación de usuarios. Emite tokens JWT (HS256, validez de 3600 segundos según `JWT_EXPIRACION_SEGUNDOS`) con los claims `sub` (id del usuario), `username` y `role`. El filtro `JwtAuthenticationFilter` se ejecuta en cada petición, verifica la firma con `jwt.secret` y comprueba los roles antes de ejecutar los endpoints.
+Gestiona el registro y la autenticación de usuarios. Emite tokens JWT (HS256, validez de 3600 segundos según `JWT_EXPIRACION_SEGUNDOS`) con los claims `sub` (id del usuario), `username` y `role`. El filtro `JwtAuthFilter` se ejecuta en cada petición, verifica la firma con `jwt.secret`, carga al usuario desde la base de datos a partir del claim `sub` y usa su rol actual (no el claim `role`) para comprobar los permisos antes de ejecutar los endpoints.
 
 ### **Roles**
 
 | **Rol** | **Permisos** |
 |---|---|
 | JEFE_TALLER | Administra productos, categorías y proveedores (RN107); registra entradas (RN201) y ajustes (RN209); configura el stock mínimo |
-| MECANICO | Registra consumos (RN204); no puede modificar los catálogos (RN107). Es el rol que se asigna al registrarse si no se especifica otro |
-| ADMIN | Rol del usuario administrador inicial, que se inserta como usuario seed (no se crea mediante el registro) |
+| MECANICO | Registra consumos (RN204); no puede modificar los catálogos (RN107). Se asigna al registrar un usuario con `role=MECANICO` (el rol es obligatorio, no hay valor por defecto) |
+| ADMIN | Rol del usuario administrador inicial, que se inserta como usuario seed (no se crea mediante el registro). Es el único rol que puede invocar `POST /api/auth/register` |
 
 ### **Reglas de negocio**
 
 | **Regla** | **Descripción** |
 |---|---|
-| RN107 | Solo el Jefe de taller podrá administrar productos, categorías y proveedores; el mecánico no podrá modificar estos catálogos. Si el token tiene `role=MECANICO`, los endpoints `/api/productos/guardar`, `/api/categorias/guardar` y `/api/proveedores/guardar` deben devolver `403 FORBIDDEN` |
+| RN107 | Solo el Jefe de taller podrá administrar productos, categorías y proveedores; el mecánico no podrá modificar estos catálogos. Si el usuario autenticado tiene rol `MECANICO`, los endpoints `/api/productos/guardar`, `/api/categorias/guardar` y `/api/proveedores/guardar` deben devolver `403 FORBIDDEN` |
 | RN109 | El RUC del proveedor debe ser único (aplicable en el registro de proveedores; la lógica de unicidad es similar a la del registro de usuarios) |
-| Validación de token | El filtro verifica la firma HS256 usando `jwt.secret`. Si el token es inválido o está caducado, bloquea la petición y devuelve `401 UNAUTHORIZED` |
+| Validación de token | El filtro verifica la firma HS256 usando `jwt.secret`. Si el token es inválido o está caducado, o el usuario no existe o está inactivo, bloquea la petición y devuelve `401` con un código específico (`TOKEN_INVALID`, `TOKEN_EXPIRED` o `ACCOUNT_DISABLED`); sin token devuelve `401 UNAUTHORIZED` |
 | Interceptación | El filtro intercepta las peticiones a `/api/vehiculos/**`, `/api/movimientos/**`, etc. Si el usuario es `MECANICO` y hace `POST /api/vehiculos`, el controlador debe verificar el rol y rechazar |
 
 ### **Endpoints requeridos**
 
 #### **1. POST /api/auth/register**
 
-**Acceso:** Público
+**Acceso:** Solo `ADMIN` (requiere un token JWT de un usuario con rol `ADMIN`)
 
-**Descripción:** Registra un nuevo usuario. El rol es opcional: si se omite, se asigna `MECANICO`. El rol `ADMIN` no se asigna por registro: el usuario administrador se inserta como usuario seed.
+**Descripción:** Registra un nuevo usuario. El rol es obligatorio (`MECANICO` o `JEFE_TALLER`) y no tiene valor por defecto. El rol `ADMIN` no se asigna por registro: el usuario administrador se inserta como usuario seed.
 
 #### **Body:**
 
@@ -164,7 +164,7 @@ Gestiona el registro y la autenticación de usuarios. Emite tokens JWT (HS256, v
 { "username": "carlos", "email": "carlos@test.com", "password": "Pass123!", "role": "MECANICO" }
 ```
 
-`role` es opcional: si se omite, se asigna el rol por defecto `MECANICO`.
+`role` es obligatorio y solo admite letras mayúsculas y guion bajo (`^[A-Z_]+$`). Si falta o tiene formato inválido devuelve `400 VALIDATION_ERROR`; si el rol no existe o es `ADMIN` devuelve `400 INVALID_ROLE`.
 
 #### **Response 201 Created:**
 
@@ -176,7 +176,7 @@ Gestiona el registro y la autenticación de usuarios. Emite tokens JWT (HS256, v
 
 1. **Email/Username único:** consultar el repositorio. Si existe, lanzar `RuntimeException("Email already in use")`.
 2. **Password Strength:** mínimo 8 caracteres, al menos 1 mayúscula y 1 número (validación personalizada en el servicio).
-3. **Rol asignación:** el registro crea automáticamente un usuario con rol `MECANICO` si no se especifica otro. El rol `ADMIN` no se puede asignar por registro, porque el usuario administrador se inserta como usuario seed. La regla RN107 restringe permisos después.
+3. **Rol asignación:** el rol indicado en `role` es obligatorio y se asigna tal cual (`MECANICO` o `JEFE_TALLER`). El rol `ADMIN` no se puede asignar por registro (`400 INVALID_ROLE`), porque el usuario administrador se inserta como usuario seed. La regla RN107 restringe permisos después.
 
 #### **Response 409 Conflict:**
 
@@ -789,13 +789,13 @@ Este módulo no define entidades propias. Consulta `MovimientoInventario` y `Con
 
 ### **Descripción**
 
-Agrupa las tareas que afectan a todo el sistema: el README y Swagger (US-26) y el criterio de pruebas unitarias, que no es una historia aparte sino que se reparte entre las historias que tocan una regla de negocio.
+Agrupa las tareas que afectan a todo el sistema: el README y Swagger (US-26) y las pruebas unitarias (US-27), que son opcionales y se dejan al final, después de la documentación.
 
 ### **Pruebas unitarias**
 
 - Se escriben con JUnit 5 y Mockito.
 - Cubren las reglas críticas del negocio (RN101 a RN209), con un mínimo de 5 tests por regla crítica.
-- Cada historia que toca una regla crea, en la misma historia, los tests unitarios de esa regla (ver el backlog).
+- Ninguna historia funcional incluye tests: se implementan todos juntos, de forma opcional, en US-27.
 
 ### **README y Swagger**
 
@@ -809,7 +809,7 @@ Agrupa las tareas que afectan a todo el sistema: el README y Swagger (US-26) y e
   3. Ejecutar `mvn spring-boot:run` o `docker compose up` (si se usa docker).
 - Lista de variables de entorno obligatorias y opcionales.
 - Endpoints principales (documentación Swagger automática) y uso de la cabecera `X-API-Version`.
-- Instrucciones para correr tests: `mvn test`.
+- Instrucciones para correr tests: `mvn test` (solo si se implementa US-27).
 - Diagrama simple de la arquitectura (Capas: Presentación -> Negocio -> Datos).
 - Información de contacto o autor.
 
@@ -820,13 +820,12 @@ Agrupa las tareas que afectan a todo el sistema: el README y Swagger (US-26) y e
 
 ## **Comunicación entre módulos**
 
-Los módulos se ejecutan en el mismo proceso y se comunican mediante llamadas a sus servicios, sin llamadas HTTP entre ellos. Un único `JwtAuthenticationFilter` valida el JWT de todas las peticiones externas.
+Los módulos se ejecutan en el mismo proceso y se comunican mediante llamadas a sus servicios, sin llamadas HTTP entre ellos. Un único `JwtAuthFilter` valida el JWT de todas las peticiones externas.
 
 ### **Autenticación**
 
-- **Peticiones externas:** cabecera `Authorization: Bearer <token>`. El filtro verifica la firma HS256 con `jwt.secret`, lee los claims `sub`, `username` y `role`, y usa el rol para decidir el acceso.
-- **Endpoints públicos:** `POST /api/auth/register` y `POST /api/auth/login`.
-- **Clave interna:** la variable `INTERNAL_API_KEY` (`internal.api.key`) es obligatoria y se valida al arrancar en `AppConfig`. El documento original no describe dónde se usa.
+- **Peticiones externas:** cabecera `Authorization: Bearer <token>`. El filtro verifica la firma HS256 con `jwt.secret`, lee el claim `sub`, carga al usuario desde la base de datos y usa su rol actual para decidir el acceso.
+- **Endpoints públicos:** solo `POST /api/auth/login`. `POST /api/auth/register` requiere un token de `ADMIN`.
 
 ### **Mapa de dependencias**
 
@@ -882,7 +881,7 @@ Ejemplo de respuesta (error de validación):
 | **HTTP** | **Código** | **Cuándo** |
 |---|---|---|
 | 400 | VALIDATION_ERROR | Algún campo no cumple las validaciones (manejo de `RuntimeException`); `StockInsuficienteException` en el registro de consumos |
-| 401 | UNAUTHORIZED, INVALID_CREDENTIALS | Token inválido o caducado, o credenciales incorrectas |
+| 401 | UNAUTHORIZED, TOKEN_INVALID, TOKEN_EXPIRED, ACCOUNT_DISABLED, INVALID_CREDENTIALS | Sin token, token inválido o caducado, cuenta desactivada, o credenciales incorrectas |
 | 403 | FORBIDDEN | El rol del usuario no tiene permiso |
 | 404 | — | El recurso no existe |
 | 409 | USER_ALREADY_EXISTS, STOCK_INSUFICIENTE | Conflicto con el estado actual (usuario duplicado, RUC duplicado; stock insuficiente según el handler global) |
@@ -954,7 +953,7 @@ management:
 
 ### **Configuración de seguridad y JWT (Fail-Fast)**
 
-La clase `AppConfig` (`com.taller.config`, Java 21) carga las propiedades `jwt.secret`, `jwt.expiration` e `internal.api.key` y las valida al arrancar (`@PostConstruct`). Si `jwt.secret` o `internal.api.key` son nulas o vacías, o si `jwt.expiration` es nula o menor o igual que 0, lanza `IllegalStateException` con un mensaje que empieza por "FATAL" y la aplicación no inicia. Expone un getter para cada propiedad.
+La clase `AppConfig` (`com.taller.config`, Java 21) carga las propiedades `jwt.secret`, `jwt.expiration`, `admin.username`, `admin.email` y `admin.password` (las tres últimas definen el usuario `ADMIN` seed) y valida al arrancar (`@PostConstruct`) las de JWT. Si `jwt.secret` es nulo o vacío, si tiene menos de 32 bytes (mínimo para HS256) o si `jwt.expiration` es nula o menor o igual que 0, lanza `IllegalStateException` con un mensaje que empieza por "FATAL" y la aplicación no inicia. Expone un getter para cada propiedad.
 
 ### **Variables de entorno obligatorias (.env)**
 
@@ -969,7 +968,6 @@ POSTGRES_PASSWORD=S3gur@W1nd3r
 # Seguridad
 JWT_SECRET=una_cadena_muy_segura_de_minimo_64_caracteres_aqui
 JWT_EXPIRACION_SEGUNDOS=3600
-INTERNAL_API_KEY=clave_secreta_interna_modulos
 
 # API Versioning
 API_VERSION_HEADER=X-API-Version
@@ -978,6 +976,11 @@ API_VERSIONS_SUPPORTED=1.0
 # Aplicación
 SERVER_PORT=8080
 SPRING_PROFILES_ACTIVE=prod
+
+# Usuario ADMIN seed
+ADMIN_USERNAME=admin
+ADMIN_EMAIL=admin@taller.com
+ADMIN_PASSWORD=Admin123!
 ```
 
 ### **Migraciones Flyway y versionado**
@@ -990,13 +993,12 @@ Las variables de entorno como `JWT_SECRET` y `POSTGRES_PASSWORD` **nunca** deben
 
 ## **Historias de usuario**
 
-Las historias de usuario se agrupan por módulo, de acuerdo con el alcance funcional del sistema. US-09 y US-25 se descartaron, US-10 (tests unitarios) se distribuyó entre las demás historias y el documento original no tiene US-24.
+Las historias de usuario se agrupan por módulo, de acuerdo con el alcance funcional del sistema. US-09 y US-25 se descartaron, US-10 (tests unitarios) pasa a ser la historia opcional US-27, al final del backlog, y el documento original no tiene US-24.
 
 ### **Criterio de pruebas unitarias**
 
-- Toda historia que toca una regla de negocio (RN) crea, en esa misma historia, los tests unitarios de esa regla (JUnit 5 + Mockito).
-- Mínimo 5 tests por regla crítica.
-- Las historias sin reglas de negocio no crean tests unitarios de reglas.
+- Las historias funcionales no incluyen la implementación de tests.
+- Los tests unitarios (JUnit 5 + Mockito, mínimo 5 por regla crítica) se agrupan en la historia opcional US-27, al final del backlog.
 
 ### **Distribución de carga del equipo**
 
@@ -1009,40 +1011,43 @@ El equipo es de 4 personas. El reparto propuesto busca que la carga de trabajo s
 | Dev 3 | US-05, US-06, US-08, US-19, US-20, US-23 |
 | Dev 4 | US-07, US-11, US-12, US-18, US-21 |
 
+US-27 (opcional) no se asigna a una sola persona: cada integrante escribe los tests de las historias que implementó.
+
 ### **Backlog**
 
-La columna "Depende de" se dedujo de lo que cada historia consume. La columna "Tests unitarios de" indica las reglas cuyos tests crea la historia.
+La columna "Depende de" se dedujo de lo que cada historia consume.
 
-| **ID** | **Historia** | **Módulo** | **Responsable** | **Depende de** | **Tests unitarios de** |
-|---|---|---|---|---|---|
-| US-01 | Infraestructura base y proyecto Spring Boot | SEC | Dev 1 | — | — |
-| US-02 | Registro e inicio de sesión (Authentication) | SEC | Dev 1 | US-01 | RN107, RN109 |
-| US-03 | Validación de JWT, roles y permisos | SEC | Dev 2 | US-02 | RN107 |
-| US-04 | Catálogo de productos: alta, consulta y edición | M100 | Dev 2 | US-03 | RN101–RN106, RN108 |
-| US-05 | Gestión de categorías y proveedores | M100 | Dev 3 | US-03 | RN102, RN105, RN109 |
-| US-06 | Registro de entradas de productos | M200 | Dev 3 | US-04, US-05 | RN201–RN203 |
-| US-07 | Validación de stock y actualización automática | M200 | Dev 4 | US-04 | RN206 |
-| US-08 | Consulta de existencias | M200 | Dev 3 | US-04 | RN104, RN302 |
-| US-11 | Registro de consumos por parte del mecánico | M200 | Dev 4 | US-04, US-07, US-12 | RN204–RN207 |
-| US-12 | Validación de stock suficiente (atómico) | M200 | Dev 4 | US-07 | RN207 |
-| US-13 | Registro de ajustes de inventario | M200 | Dev 2 | US-04 | RN208, RN209 |
-| US-14 | Configuración de stock mínimo | M300 | Dev 1 | US-04 | RN104, RN301, RN304 |
-| US-15 | Generación automática de alertas de bajo stock | M300 | Dev 1 | US-04, US-05 | RN302–RN305 |
-| US-16 | Consulta de alertas y proveedor principal | M300 | Dev 2 | US-15 | — |
-| US-17 | Reportes de movimientos por periodo | M400 | Dev 2 | US-06 | RN405, RN408 |
-| US-18 | Reporte de consumo por periodo | M400 | Dev 4 | US-11 | RN404 |
-| US-19 | Reporte de bajo stock agrupado por proveedor | M400 | Dev 3 | US-15 | — |
-| US-20 | Consulta de valor estimado del inventario | M400 | Dev 3 | US-04 | RN407, RN408 |
-| US-21 | Exportar reportes a PDF y Excel | M400 | Dev 4 | US-17, US-18, US-19 | — |
-| US-22 | Dashboard con resumen ejecutivo | M400 | Dev 1 | US-16, US-20 | — |
-| US-23 | Series temporales: estadísticas de movimientos | M400 | Dev 3 | US-06 | — |
-| US-26 | Documentación y README final | Transversal | Dev 1 | — | — |
+| **ID** | **Historia** | **Módulo** | **Responsable** | **Depende de** |
+|---|---|---|---|---|
+| US-01 | Infraestructura base y proyecto Spring Boot | SEC | Dev 1 | — |
+| US-02 | Registro e inicio de sesión (Authentication) | SEC | Dev 1 | US-01 |
+| US-03 | Validación de JWT, roles y permisos | SEC | Dev 2 | US-02 |
+| US-04 | Catálogo de productos: alta, consulta y edición | M100 | Dev 2 | US-03 |
+| US-05 | Gestión de categorías y proveedores | M100 | Dev 3 | US-03 |
+| US-06 | Registro de entradas de productos | M200 | Dev 3 | US-04, US-05 |
+| US-07 | Validación de stock y actualización automática | M200 | Dev 4 | US-04 |
+| US-08 | Consulta de existencias | M200 | Dev 3 | US-04 |
+| US-11 | Registro de consumos por parte del mecánico | M200 | Dev 4 | US-04, US-07, US-12 |
+| US-12 | Validación de stock suficiente (atómico) | M200 | Dev 4 | US-07 |
+| US-13 | Registro de ajustes de inventario | M200 | Dev 2 | US-04 |
+| US-14 | Configuración de stock mínimo | M300 | Dev 1 | US-04 |
+| US-15 | Generación automática de alertas de bajo stock | M300 | Dev 1 | US-04, US-05 |
+| US-16 | Consulta de alertas y proveedor principal | M300 | Dev 2 | US-15 |
+| US-17 | Reportes de movimientos por periodo | M400 | Dev 2 | US-06 |
+| US-18 | Reporte de consumo por periodo | M400 | Dev 4 | US-11 |
+| US-19 | Reporte de bajo stock agrupado por proveedor | M400 | Dev 3 | US-15 |
+| US-20 | Consulta de valor estimado del inventario | M400 | Dev 3 | US-04 |
+| US-21 | Exportar reportes a PDF y Excel | M400 | Dev 4 | US-17, US-18, US-19 |
+| US-22 | Dashboard con resumen ejecutivo | M400 | Dev 1 | US-16, US-20 |
+| US-23 | Series temporales: estadísticas de movimientos | M400 | Dev 3 | US-06 |
+| US-26 | Documentación y README final | Transversal | Dev 1 | — |
+| US-27 | Tests unitarios de reglas de negocio (opcional) | Transversal | Todo el equipo | Las historias que implementan cada regla |
 
 ### **Módulo SEC — US-01 a US-03**
 
 #### **US-01 — Infraestructura base y proyecto Spring Boot**
 
-**Módulo:** SEC · **Responsable:** Dev 1 · **Reglas:** RN101 (referencia implícita en el setup; su test unitario se crea en US-04)
+**Módulo:** SEC · **Responsable:** Dev 1 · **Reglas:** RN101 (referencia implícita en el setup)
 
 **Qué se debe crear:**
 
@@ -1072,16 +1077,14 @@ La columna "Depende de" se dedujo de lo que cada historia consume. La columna "T
 - Servicio de autenticación que use `jwt.secret` desde `AppConfig`.
 - Endpoints `POST /api/auth/register` y `POST /api/auth/login`.
 - Inserción del usuario `ADMIN` como usuario seed.
-- Tests unitarios de RN107 y RN109.
 
 #### **Criterios de aceptación:**
 
 - Con email y username únicos, `POST /api/auth/register` crea el usuario; si ya existen, lanza `RuntimeException("Email already in use")` (`409 USER_ALREADY_EXISTS`).
 - Una contraseña de menos de 8 caracteres, sin mayúscula o sin número se rechaza.
-- Si no se especifica el rol, se asigna `MECANICO`.
-- El usuario `ADMIN` existe como usuario seed y el rol `ADMIN` no se puede asignar mediante `POST /api/auth/register`.
+- El rol es obligatorio: sin `role` o con formato inválido se rechaza con `400 VALIDATION_ERROR`.
+- El usuario `ADMIN` existe como usuario seed y el rol `ADMIN` no se puede asignar mediante `POST /api/auth/register`, que solo puede invocar un usuario `ADMIN`.
 - Con credenciales correctas, `POST /api/auth/login` devuelve un JWT con los claims `sub`, `username` y `role`; con credenciales incorrectas devuelve `401 INVALID_CREDENTIALS`.
-- Existen los tests unitarios de RN107 y RN109.
 
 #### **US-03 — Validación de JWT, roles y permisos**
 
@@ -1089,16 +1092,14 @@ La columna "Depende de" se dedujo de lo que cada historia consume. La columna "T
 
 **Qué se debe crear:**
 
-- Filtro de seguridad `JwtAuthenticationFilter` (se ejecuta en cada petición).
+- Filtro de seguridad `JwtAuthFilter` (se ejecuta en cada petición).
 - Anotaciones o lógica para verificar roles antes de ejecutar los endpoints.
-- Tests unitarios de RN107.
 
 #### **Criterios de aceptación:**
 
-- Con un token inválido o caducado, se bloquea la petición y se devuelve `401 UNAUTHORIZED`.
-- Con `role=MECANICO`, los endpoints `/api/productos/guardar`, `/api/categorias/guardar` y `/api/proveedores/guardar` devuelven `403 FORBIDDEN`.
+- Con un token inválido o caducado, o de un usuario inexistente o inactivo, se bloquea la petición y se devuelve `401` (`TOKEN_INVALID`, `TOKEN_EXPIRED` o `ACCOUNT_DISABLED`); sin token, `401 UNAUTHORIZED`.
+- Con un usuario de rol `MECANICO`, los endpoints `/api/productos/guardar`, `/api/categorias/guardar` y `/api/proveedores/guardar` devuelven `403 FORBIDDEN`.
 - Si el usuario es `MECANICO` y hace `POST /api/vehiculos`, el controlador verifica el rol y rechaza.
-- Existen los tests unitarios de RN107.
 
 ### **Módulo M100 — US-04 y US-05**
 
@@ -1114,7 +1115,6 @@ La columna "Depende de" se dedujo de lo que cada historia consume. La columna "T
 - Servicio `ProductoService`.
 - Repositorio `ProductoRepository` (`JpaRepository`).
 - Endpoints CRUD completos.
-- Tests unitarios de RN101, RN102, RN103, RN104, RN105, RN106 y RN108.
 
 #### **Criterios de aceptación:**
 
@@ -1122,7 +1122,6 @@ La columna "Depende de" se dedujo de lo que cada historia consume. La columna "T
 - `GET /api/productos` es paginado, filtra por `nombre` (parcial, insensible a mayúsculas) o `categoria`, y muestra `stockActual` y `stockCritico`.
 - `PUT /api/productos/{id}` valida que el producto exista y, con historial en `movimiento_inventario`, solo permite editar `nombre`, `descripcion` y `unidadMedida`; si intenta cambiar `stockMinimo` o `activo`, lanza excepción.
 - `PATCH /api/productos/{id}/desactivar` rechaza la desactivación si hay movimientos registrados (RN108).
-- Existen los tests unitarios de RN101 a RN106 y RN108.
 
 #### **US-05 — Gestión de categorías y proveedores**
 
@@ -1134,14 +1133,12 @@ La columna "Depende de" se dedujo de lo que cada historia consume. La columna "T
 
 - Controladores `CategoriaController` y `ProveedorController`.
 - Lógica de asociación.
-- Tests unitarios de RN102, RN105 y RN109.
 
 #### **Criterios de aceptación:**
 
 - `POST /api/categorias` valida que el `nombre` no esté vacío y sea único.
 - `POST /api/proveedores` valida que el `ruc` (o código de identificación) sea único; si ya existe, devuelve `409`.
 - Al crear un producto, la categoría y el proveedor seleccionados deben estar activos; si no, error 400 "Categoría inactiva" o "Proveedor inactivo".
-- Existen los tests unitarios de RN102, RN105 y RN109.
 
 ### **Módulo M200 — US-06, US-07, US-08, US-11, US-12 y US-13**
 
@@ -1155,7 +1152,6 @@ La columna "Depende de" se dedujo de lo que cada historia consume. La columna "T
 
 - Controlador `MovimientoController` (o específico de entradas).
 - Endpoint `POST /api/movimientos/entrada`.
-- Tests unitarios de RN201, RN202 y RN203.
 
 #### **Criterios de aceptación:**
 
@@ -1164,7 +1160,6 @@ La columna "Depende de" se dedujo de lo que cada historia consume. La columna "T
 - Con cantidad 0 o negativa, error 400 "Cantidad debe ser mayor que cero"; con costo negativo, error 400 "Costo unitario no puede ser negativo".
 - Al confirmar, `stockActual` aumenta, `costoUltimaCompra` se actualiza con el costo unitario de la entrada y se registra un `MovimientoInventario` tipo `ENTRADA` con `stockAnterior`, `stockPosterior`, fecha y usuario.
 - La respuesta `201 Created` incluye el movimiento y el nuevo estado del producto.
-- Existen los tests unitarios de RN201 a RN203.
 
 #### **US-07 — Validación de stock y actualización automática**
 
@@ -1174,14 +1169,12 @@ La columna "Depende de" se dedujo de lo que cada historia consume. La columna "T
 
 - Métodos auxiliares en `ProductoService` o `MovimientoService`.
 - Lógica para evitar stock negativo.
-- Tests unitarios de RN206.
 
 #### **Criterios de aceptación:**
 
 - `descontarStock(int cantidadASumar)` en `Producto` lanza `IllegalArgumentException("Stock insuficiente. Quedaría negativo.")` si el resultado es < 0.
 - El método lo llama el registro de consumos y es reutilizable.
 - Para entradas, la cantidad debe ser positiva.
-- Existen los tests unitarios de RN206.
 
 #### **US-08 — Consulta de existencias**
 
@@ -1193,7 +1186,6 @@ La columna "Depende de" se dedujo de lo que cada historia consume. La columna "T
 
 - Endpoint `GET /api/existencias?ids=` para consultar las existencias (stock actual) de un producto o de un conjunto de productos.
 - Lógica del indicador `stockCritico` (`stockActual <= stockMinimo`).
-- Tests unitarios de RN104 y RN302.
 
 #### **Criterios de aceptación:**
 
@@ -1201,7 +1193,6 @@ La columna "Depende de" se dedujo de lo que cada historia consume. La columna "T
 - Si algún producto no existe, se retorna error 404; si está inactivo, error 400.
 - La respuesta incluye, por cada producto, `productoId`, `codigo`, `nombre`, `stockActual`, `stockMinimo` y el indicador `stockCritico` (`stockActual <= stockMinimo`).
 - Un producto con `stockActual <= stockMinimo` se marca con `stockCritico = true` (RN302).
-- Existen los tests unitarios de RN104 y RN302.
 
 #### **US-11 — Registro de consumos por parte del mecánico**
 
@@ -1213,7 +1204,6 @@ La columna "Depende de" se dedujo de lo que cada historia consume. La columna "T
 
 - Endpoint `POST /api/consumos`.
 - Lógica para descontar stock de forma atómica.
-- Tests unitarios de RN204, RN205, RN206 y RN207.
 
 #### **Criterios de aceptación:**
 
@@ -1222,7 +1212,6 @@ La columna "Depende de" se dedujo de lo que cada historia consume. La columna "T
 - Con cantidad <= 0 o stock insuficiente, no se continúa con el resto de ítems.
 - Si todos los ítems son válidos, se guarda el `Consumo`, se registra un `MovimientoInventario` tipo `CONSUMO` por ítem y se descuenta el stock guardando `stockAnterior` y `stockPosterior`.
 - Si falla algún producto, no se descuenta nada parcial.
-- Existen los tests unitarios de RN204 a RN207.
 
 #### **US-12 — Validación de stock suficiente (atómico)**
 
@@ -1232,13 +1221,11 @@ La columna "Depende de" se dedujo de lo que cada historia consume. La columna "T
 
 - Método de servicio `validarYDescontarStock(List<ConsumoItem> items)`.
 - Uso de `@Transactional`.
-- Tests unitarios de RN207.
 
 #### **Criterios de aceptación:**
 
 - El consumo es atómico: todo o nada.
 - `StockInsuficienteException` se captura en el controlador y se devuelve al cliente con HTTP 400 y un mensaje claro que indica qué producto no tiene suficiente stock.
-- Existen los tests unitarios de RN207.
 
 #### **US-13 — Registro de ajustes de inventario**
 
@@ -1249,7 +1236,6 @@ La columna "Depende de" se dedujo de lo que cada historia consume. La columna "T
 **Qué se debe crear:**
 
 - Endpoint `POST /api/movimientos/ajuste`.
-- Tests unitarios de RN208 y RN209.
 
 #### **Criterios de aceptación:**
 
@@ -1257,7 +1243,6 @@ La columna "Depende de" se dedujo de lo que cada historia consume. La columna "T
 - Con producto inexistente o inactivo, se devuelve error.
 - Se calcula `variacion = cantidadFisica - stockActual`, se actualiza `stockActual` a `cantidadFisica` y se registra un `MovimientoInventario` tipo `AJUSTE` con `variacion`, `stockAnterior`, `stockPosterior` y `motivo`.
 - El ajuste no modifica `costoUltimaCompra`.
-- Existen los tests unitarios de RN208 y RN209.
 
 ### **Módulo M300 — US-14, US-15 y US-16**
 
@@ -1270,14 +1255,12 @@ La columna "Depende de" se dedujo de lo que cada historia consume. La columna "T
 **Qué se debe crear:**
 
 - Endpoint `PUT /api/productos/{id}/stock-minimo`.
-- Tests unitarios de RN104, RN301 y RN304.
 
 #### **Criterios de aceptación:**
 
 - Solo `JEFE_TALLER` puede usarlo.
 - Con `{ "nuevoStockMinimo": 10 }`, si el producto no existe o el valor no es un entero >= 0, se devuelve error (400 para el valor inválido).
 - Se actualiza `stock_minimo` y se retorna el producto actualizado con el nuevo `stockMinimo`.
-- Existen los tests unitarios de RN104, RN301 y RN304.
 
 #### **US-15 — Generación automática de alertas de bajo stock**
 
@@ -1288,14 +1271,12 @@ La columna "Depende de" se dedujo de lo que cada historia consume. La columna "T
 - Servicio `AlertaService`.
 - Un scheduled task o trigger que revise el stock.
 - DTO `AlertaStock` (no persistente).
-- Tests unitarios de RN302, RN303, RN304 y RN305.
 
 #### **Criterios de aceptación:**
 
 - Se genera una alerta por cada producto activo con `stock_actual <= stock_minimo`.
 - Cada alerta muestra código, nombre, stock actual, stock mínimo, cantidad sugerida (`stock_minimo - stock_actual`) y proveedor principal.
 - Si la lista está vacía, el sistema informa que "No hay productos con bajo stock".
-- Existen los tests unitarios de RN302 a RN305.
 
 #### **US-16 — Consulta de alertas y proveedor principal**
 
@@ -1323,7 +1304,6 @@ La columna "Depende de" se dedujo de lo que cada historia consume. La columna "T
 **Qué se debe crear:**
 
 - Endpoint `GET /api/reportes/movimientos?desde=2023-01-01&hasta=2023-12-31`.
-- Tests unitarios de RN405 y RN408.
 
 #### **Criterios de aceptación:**
 
@@ -1331,7 +1311,6 @@ La columna "Depende de" se dedujo de lo que cada historia consume. La columna "T
 - Si `hasta` es anterior a `desde`, error 400 "La fecha final no puede ser anterior a la inicial".
 - Se consulta `movimiento_inventario` entre `desde` y `hasta` (inclusive), con filtro opcional por `tipo`.
 - Se retorna una lista o un objeto de resumen con totales por tipo.
-- Existen los tests unitarios de RN405 y RN408.
 
 #### **US-18 — Reporte de consumo por periodo**
 
@@ -1342,13 +1321,11 @@ La columna "Depende de" se dedujo de lo que cada historia consume. La columna "T
 **Qué se debe crear:**
 
 - Endpoint `GET /api/reportes/consumo?desde=&hasta=`.
-- Tests unitarios de RN404.
 
 #### **Criterios de aceptación:**
 
 - Permite identificar producto, cantidad utilizada, fecha, mecánico y finalidad declarada.
 - Consulta `movimiento_inventario` de tipo `CONSUMO`, une con `usuario` para obtener el nombre del mecánico y agrupa por producto y mecánico para sumar cantidades.
-- Existen los tests unitarios de RN404.
 
 #### **US-19 — Reporte de bajo stock agrupado por proveedor**
 
@@ -1374,14 +1351,12 @@ La columna "Depende de" se dedujo de lo que cada historia consume. La columna "T
 **Qué se debe crear:**
 
 - Endpoint `GET /api/reportes/valor-inventario`.
-- Tests unitarios de RN407 y RN408.
 
 #### **Criterios de aceptación:**
 
 - El valor estimado es la suma de `stock_actual * costo_ultima_compra` de los productos activos con costo y stock mayor que 0.
 - Los productos sin costo de última compra se cuentan en `productosSinCosto` y se excluyen del total.
 - La respuesta incluye `totalGeneral`, `totalProductosConCosto`, `productosSinCosto` y el detalle por producto.
-- Existen los tests unitarios de RN407 y RN408.
 
 #### **US-21 — Exportar reportes a PDF y Excel**
 
@@ -1430,7 +1405,7 @@ La columna "Depende de" se dedujo de lo que cada historia consume. La columna "T
 - Recibe `from`, `to` y `granularity` (`DAY`, `WEEK` o `MONTH`).
 - Consulta `movimiento_inventario`; con `granularity = DAY`, agrupa por fecha y devuelve un mapa `fecha` -> `cantidad de movimientos`.
 
-### **Módulo Transversal — US-26**
+### **Módulo Transversal — US-26 y US-27**
 
 #### **US-26 — Documentación y README final**
 
@@ -1443,5 +1418,38 @@ La columna "Depende de" se dedujo de lo que cada historia consume. La columna "T
 
 #### **Criterios de aceptación:**
 
-- El README incluye descripción general, requisitos previos, guía de arranque, variables de entorno, endpoints principales, instrucciones para correr tests (`mvn test`), diagrama simple de la arquitectura e información de contacto o autor.
+- El README incluye descripción general, requisitos previos, guía de arranque, variables de entorno, endpoints principales, instrucciones para correr tests (`mvn test`, solo si se implementa US-27), diagrama simple de la arquitectura e información de contacto o autor.
 - Al levantar la aplicación, Swagger UI está disponible en `http://localhost:8080/swagger-ui.html` con los códigos de error (400, 401, 403, 409, 500) documentados.
+
+#### **US-27 — Tests unitarios de reglas de negocio (opcional)**
+
+**Módulo:** Transversal · **Responsable:** Todo el equipo (cada integrante escribe los tests de las historias que implementó) · **Depende de:** las historias que implementan cada regla
+
+Historia opcional: se deja al final, después de la documentación (US-26), y no bloquea ninguna otra historia.
+
+**Qué se debe crear:**
+
+- Tests unitarios con JUnit 5 y Mockito de las reglas de negocio de la siguiente tabla.
+
+| **Historia** | **Reglas a cubrir** |
+|---|---|
+| US-02 | RN107, RN109 |
+| US-03 | RN107 |
+| US-04 | RN101–RN106, RN108 |
+| US-05 | RN102, RN105, RN109 |
+| US-06 | RN201–RN203 |
+| US-07 | RN206 |
+| US-08 | RN104, RN302 |
+| US-11 | RN204–RN207 |
+| US-12 | RN207 |
+| US-13 | RN208, RN209 |
+| US-14 | RN104, RN301, RN304 |
+| US-15 | RN302–RN305 |
+| US-17 | RN405, RN408 |
+| US-18 | RN404 |
+| US-20 | RN407, RN408 |
+
+#### **Criterios de aceptación:**
+
+- Cada regla crítica tiene un mínimo de 5 tests.
+- `mvn test` ejecuta los tests y todos pasan.
