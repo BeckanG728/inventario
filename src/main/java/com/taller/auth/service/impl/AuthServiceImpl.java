@@ -40,12 +40,8 @@ public class AuthServiceImpl implements AuthService {
     public RegisterResponse register(RegisterRequest request) {
         UserRole role = resolveRole(request.role());
 
-        String email = request.email().trim().toLowerCase();
         String username = request.username().trim();
 
-        if (usuarioRepository.existsByEmail(email)) {
-            throw new UserAlreadyExistsException("Email already in use");
-        }
         if (usuarioRepository.existsByUsername(username)) {
             throw new UserAlreadyExistsException("Username already in use");
         }
@@ -54,7 +50,7 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new IllegalStateException("Rol no configurado: " + role.name()));
 
         Usuario saved = usuarioRepository.save(
-                new Usuario(username, email, passwordEncoder.encode(request.password()), rol));
+                new Usuario(username, passwordEncoder.encode(request.password()), rol));
 
         return userMapper.toRegisterResponse(saved);
     }

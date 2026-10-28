@@ -10,7 +10,7 @@ El Sistema de Gestión de Inventario del Taller Mecánico es un backend construi
 | Tipo | Backend con arquitectura de monolito modular |
 | Paquete base | `com.taller` |
 | Prefijo de la API | `/api` |
-| Versionado de la API | API Versioning nativo de Spring Framework 7, incorporado en Spring Boot 4, por cabecera HTTP (header-based): la versión no se escribe en las rutas (sin `v1` ni `v2`) y el cliente la envía en la cabecera `X-API-Version` |
+| Versionado de la API | No se usa versionado: las rutas son estables bajo `/api`, sin segmento ni cabecera de versión |
 | Base de datos | PostgreSQL 15, base `inventario_taller` |
 | Configuración | Solo variables de entorno, sin valores por defecto; validación Fail-Fast al arrancar |
 | Puerto | Variable `SERVER_PORT` (8080 en el `.env` de ejemplo) |
@@ -41,7 +41,7 @@ Todos los módulos dependen de SEC para autenticar y autorizar las peticiones (`
 |---|---|
 | Lenguaje | Java 21 (Pattern Matching, Records, Foreign Key API, Grains) |
 | Framework | Spring Boot 4 |
-| Versionado de API | API Versioning nativo de Spring Framework 7, incorporado en Spring Boot 4 (versionado por cabecera HTTP) |
+| Versionado de API | No se usa versionado de API (rutas estables bajo `/api`) |
 | Seguridad | Spring Security 6 + JWT (HS256) con validación de variables de entorno obligatorias (Fail-Fast) |
 | Base de datos | PostgreSQL 15 |
 | Migraciones | Flyway |
@@ -65,11 +65,11 @@ Con el objetivo de garantizar consistencia, legibilidad y mantenibilidad del có
 
 ### **Formato de endpoints**
 
-- Prefijo global: `/api`. La versión no se escribe en las rutas.
+- Prefijo global: `/api`.
 - Recursos en plural con sustantivos en minúsculas (ej: `/api/productos`, `/api/movimientos`).
 - Sub-recursos con identificador (ej: `/api/productos/{id}`, `/api/productos/{id}/stock-minimo`).
 - Uso correcto de verbos HTTP: POST (crear), GET (consultar), PUT (actualizar), PATCH (actualizar parcial), DELETE (eliminar).
-- Versionado: se gestiona con el API Versioning nativo de Spring Framework 7, incorporado en Spring Boot 4, mediante versionado por cabecera HTTP (header-based), para versionar sin agregar `v1` o `v2` a la URL. Cada endpoint declara su versión con el atributo `version` de su anotación de mapeo (ej: `version = "1.0"`) y el cliente la envía en la cabecera `X-API-Version`. No se usa `/v1` en las rutas.
+- Sin versionado de API: las rutas no incluyen versión y no se envía cabecera de versión.
 
 ### **Manejo de variables de entorno**
 
@@ -161,7 +161,7 @@ Gestiona el registro y la autenticación de usuarios. Emite tokens JWT (HS256, v
 #### **Body:**
 
 ```json
-{ "username": "carlos", "email": "carlos@test.com", "password": "Pass123!", "role": "MECANICO" }
+{ "username": "carlos", "password": "Pass123!", "role": "MECANICO" }
 ```
 
 `role` es obligatorio y solo admite letras mayúsculas y guion bajo (`^[A-Z_]+$`). Si falta o tiene formato inválido devuelve `400 VALIDATION_ERROR`; si el rol no existe o es `ADMIN` devuelve `400 INVALID_ROLE`.
@@ -169,19 +169,19 @@ Gestiona el registro y la autenticación de usuarios. Emite tokens JWT (HS256, v
 #### **Response 201 Created:**
 
 ```json
-{ "id": 1, "username": "carlos", "email": "carlos@test.com", "role": "MECANICO", "createdAt": "2026-10-05T10:30:00Z" }
+{ "id": 1, "username": "carlos", "role": "MECANICO", "createdAt": "2026-10-05T10:30:00Z" }
 ```
 
 #### **Validaciones:**
 
-1. **Email/Username único:** consultar el repositorio. Si existe, lanzar `RuntimeException("Email already in use")`.
+1. **Username único:** consultar el repositorio. Si existe, lanzar `RuntimeException("Username already in use")`.
 2. **Password Strength:** mínimo 8 caracteres, al menos 1 mayúscula y 1 número (validación personalizada en el servicio).
 3. **Rol asignación:** el rol indicado en `role` es obligatorio y se asigna tal cual (`MECANICO` o `JEFE_TALLER`). El rol `ADMIN` no se puede asignar por registro (`400 INVALID_ROLE`), porque el usuario administrador se inserta como usuario seed. La regla RN107 restringe permisos después.
 
 #### **Response 409 Conflict:**
 
 ```json
-{ "error": "USER_ALREADY_EXISTS", "message": "Ya existe un usuario con ese email", "timestamp": "2026-10-05T10:30:00Z" }
+{ "error": "USER_ALREADY_EXISTS", "message": "Ya existe un usuario con ese username", "timestamp": "2026-10-05T10:30:00Z" }
 ```
 
 #### **2. POST /api/auth/login**
@@ -193,7 +193,7 @@ Gestiona el registro y la autenticación de usuarios. Emite tokens JWT (HS256, v
 #### **Body:**
 
 ```json
-{ "email": "carlos@test.com", "password": "Pass123!" }
+{ "username": "carlos", "password": "Pass123!" }
 ```
 
 #### **Response 200 OK:**
@@ -205,12 +205,12 @@ Gestiona el registro y la autenticación de usuarios. Emite tokens JWT (HS256, v
 #### **Response 401 Unauthorized:**
 
 ```json
-{ "error": "INVALID_CREDENTIALS", "message": "Email o contraseña incorrectos", "timestamp": "2026-10-05T10:30:00Z" }
+{ "error": "INVALID_CREDENTIALS", "message": "Usuario o contraseña incorrectos", "timestamp": "2026-10-05T10:30:00Z" }
 ```
 
 #### **Validaciones:**
 
-1. Buscar usuario por email.
+1. Buscar usuario por username.
 2. Verificar contraseña (bcrypt compare).
 3. Si éxito: generar token JWT firmado con `jwt.secret`. El token debe contener los claims `sub` (id usuario), `username` y `role`.
 4. Si fallo: lanzar excepción `RuntimeException("Credenciales inválidas")`.
@@ -808,7 +808,7 @@ Agrupa las tareas que afectan a todo el sistema: el README y Swagger (US-26) y l
   2. Crear archivo `.env` con las variables obligatorias (ver sección de variables de entorno).
   3. Ejecutar `mvn spring-boot:run` o `docker compose up` (si se usa docker).
 - Lista de variables de entorno obligatorias y opcionales.
-- Endpoints principales (documentación Swagger automática) y uso de la cabecera `X-API-Version`.
+- Endpoints principales (documentación Swagger automática).
 - Instrucciones para correr tests: `mvn test` (solo si se implementa US-27).
 - Diagrama simple de la arquitectura (Capas: Presentación -> Negocio -> Datos).
 - Información de contacto o autor.
@@ -901,7 +901,7 @@ Dado que no hay valores por defecto y las validaciones son estrictas, es crucial
 - Los identificadores de las entidades son `Long`.
 - Los instantes usan ISO-8601 (ej: `2026-10-05T10:30:00Z`).
 - La paginación usa los parámetros `page` y `size`.
-- Los endpoints usan el prefijo `/api`, recursos en plural y los verbos HTTP según su función; la versión se gestiona con API Versioning (cabecera `X-API-Version`).
+- Los endpoints usan el prefijo `/api`, recursos en plural y los verbos HTTP según su función.
 - Toda entrada de usuario se valida en backend antes de procesarse.
 - La documentación de los endpoints está en Swagger UI (`/swagger-ui.html`).
 
@@ -909,7 +909,7 @@ Dado que no hay valores por defecto y las validaciones son estrictas, es crucial
 
 El siguiente principio es transversal a todo el proyecto: **todas las configuraciones deben obtenerse exclusivamente de Variables de Entorno (Environment Variables). No se permiten valores por defecto en el código (`application.yml`) ni en las anotaciones `@Value`.** Si una variable crítica falta, la aplicación debe fallar en el arranque (Fail-Fast).
 
-Todos los endpoints de la API usan el prefijo `/api` (por ejemplo, `/api/productos`, `/api/movimientos/entrada`) y se versionan con el **API Versioning nativo de Spring Framework 7, incorporado en Spring Boot 4**, usando versionado por cabecera HTTP (header-based): la versión se declara con el atributo `version` de cada anotación de mapeo y el cliente la envía en la cabecera configurada (`X-API-Version`). No se escribe `/v1` en las rutas y no se define una versión por defecto, en línea con el principio de no usar valores por defecto.
+Todos los endpoints de la API usan el prefijo `/api` (por ejemplo, `/api/productos`, `/api/movimientos/entrada`). No se aplica versionado de API: las rutas no incluyen segmento de versión y el cliente no envía cabecera de versión.
 
 ### **Estructura de `application.yml` (Spring Boot 4)**
 
@@ -934,12 +934,6 @@ spring:
     show-sql: false
   flyway:
     baseline-on-migrate: true
-  # API Versioning (Spring Boot 4)
-  mvc:
-    apiversion:
-      supported: ${API_VERSIONS_SUPPORTED}
-      use:
-        header: ${API_VERSION_HEADER}
   # Configuración de seguridad JWT
   security:
     # Spring Security 6 configuración...
@@ -953,7 +947,7 @@ management:
 
 ### **Configuración de seguridad y JWT (Fail-Fast)**
 
-La clase `AppConfig` (`com.taller.config`, Java 21) carga las propiedades `jwt.secret`, `jwt.expiration`, `admin.username`, `admin.email` y `admin.password` (las tres últimas definen el usuario `ADMIN` seed) y valida al arrancar (`@PostConstruct`) las de JWT. Si `jwt.secret` es nulo o vacío, si tiene menos de 32 bytes (mínimo para HS256) o si `jwt.expiration` es nula o menor o igual que 0, lanza `IllegalStateException` con un mensaje que empieza por "FATAL" y la aplicación no inicia. Expone un getter para cada propiedad.
+La clase `AppConfig` (`com.taller.config`, Java 21) carga las propiedades `jwt.secret`, `jwt.expiration`, `admin.username` y `admin.password` (las dos últimas definen el usuario `ADMIN` seed) y valida al arrancar (`@PostConstruct`) las de JWT. Si `jwt.secret` es nulo o vacío, si tiene menos de 32 bytes (mínimo para HS256) o si `jwt.expiration` es nula o menor o igual que 0, lanza `IllegalStateException` con un mensaje que empieza por "FATAL" y la aplicación no inicia. Expone un getter para cada propiedad.
 
 ### **Variables de entorno obligatorias (.env)**
 
@@ -969,17 +963,12 @@ POSTGRES_PASSWORD=S3gur@W1nd3r
 JWT_SECRET=una_cadena_muy_segura_de_minimo_64_caracteres_aqui
 JWT_EXPIRACION_SEGUNDOS=3600
 
-# API Versioning
-API_VERSION_HEADER=X-API-Version
-API_VERSIONS_SUPPORTED=1.0
-
 # Aplicación
 SERVER_PORT=8080
 SPRING_PROFILES_ACTIVE=prod
 
 # Usuario ADMIN seed
 ADMIN_USERNAME=admin
-ADMIN_EMAIL=admin@taller.com
 ADMIN_PASSWORD=Admin123!
 ```
 
@@ -1055,14 +1044,13 @@ La columna "Depende de" se dedujo de lo que cada historia consume.
 - `pom.xml` (Maven) configurado para Java 21 y Spring Boot 4.
 - Clase principal con `@SpringBootApplication`.
 - Configuración inicial en `application.yml` que falle si no encuentra las variables de entorno críticas.
-- Configuración de API Versioning (`spring.mvc.apiversion.*`) mediante variables de entorno.
 
 #### **Criterios de aceptación:**
 
 - El proyecto se levanta con `mvn spring-boot:run` o `java -jar`.
 - Si faltan `jwt.secret` o `db.url`, la aplicación no inicia (validación en `AppConfig`).
 - Si `AppConfig.validateEnvironment()` lanza excepción, la terminal muestra el mensaje de error y se detiene.
-- Las rutas de los controladores no incluyen `/v1`: la versión se resuelve con API Versioning a partir de la cabecera `X-API-Version`.
+- Las rutas de los controladores no incluyen versión.
 
 #### **US-02 — Registro e inicio de sesión (Authentication)**
 
@@ -1080,7 +1068,7 @@ La columna "Depende de" se dedujo de lo que cada historia consume.
 
 #### **Criterios de aceptación:**
 
-- Con email y username únicos, `POST /api/auth/register` crea el usuario; si ya existen, lanza `RuntimeException("Email already in use")` (`409 USER_ALREADY_EXISTS`).
+- Con username único, `POST /api/auth/register` crea el usuario; si ya existe, lanza `RuntimeException("Username already in use")` (`409 USER_ALREADY_EXISTS`).
 - Una contraseña de menos de 8 caracteres, sin mayúscula o sin número se rechaza.
 - El rol es obligatorio: sin `role` o con formato inválido se rechaza con `400 VALIDATION_ERROR`.
 - El usuario `ADMIN` existe como usuario seed y el rol `ADMIN` no se puede asignar mediante `POST /api/auth/register`, que solo puede invocar un usuario `ADMIN`.

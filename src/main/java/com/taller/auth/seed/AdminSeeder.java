@@ -18,7 +18,6 @@ public class AdminSeeder implements ApplicationRunner {
     private final RolRepository rolRepository;
     private final PasswordEncoder passwordEncoder;
     private final String adminUsername;
-    private final String adminEmail;
     private final String adminPassword;
 
     public AdminSeeder(UsuarioRepository usuarioRepository,
@@ -29,19 +28,18 @@ public class AdminSeeder implements ApplicationRunner {
         this.rolRepository = rolRepository;
         this.passwordEncoder = passwordEncoder;
         this.adminUsername = appConfig.getAdminUsername().trim();
-        this.adminEmail = appConfig.getAdminEmail().trim().toLowerCase();
         this.adminPassword = appConfig.getAdminPassword();
     }
 
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
-        if (usuarioRepository.existsByEmail(adminEmail) || usuarioRepository.existsByUsername(adminUsername)) {
+        if (usuarioRepository.existsByUsername(adminUsername)) {
             return;
         }
         Rol adminRole = rolRepository.findByNombre("ADMIN")
                 .orElseThrow(() -> new IllegalStateException("FATAL: el rol ADMIN no existe, revisar migración V1"));
-        usuarioRepository.save(new Usuario(adminUsername, adminEmail,
+        usuarioRepository.save(new Usuario(adminUsername,
                 passwordEncoder.encode(adminPassword), adminRole));
     }
 }

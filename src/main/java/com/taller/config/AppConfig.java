@@ -22,9 +22,6 @@ public class AppConfig {
     @Value("${admin.username}")
     private String adminUsername;
 
-    @Value("${admin.email}")
-    private String adminEmail;
-
     @Value("${admin.password}")
     private String adminPassword;
 

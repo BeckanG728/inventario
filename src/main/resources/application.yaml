@@ -13,11 +13,6 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: true
-  mvc:
-    apiversion:
-      supported: ${API_VERSIONS_SUPPORTED}
-      use:
-        header: ${API_VERSION_HEADER}
 
 server:
   port: ${SERVER_PORT}
@@ -35,5 +30,4 @@ management:
 
 admin:
   username: ${ADMIN_USERNAME}
-  email: ${ADMIN_EMAIL}
   password: ${ADMIN_PASSWORD}

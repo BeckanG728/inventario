@@ -12,11 +12,6 @@ public record RegisterRequest(
         String username,
 
         @NotBlank
-        @Email
-        @Size(max = 150)
-        String email,
-
-        @NotBlank
         @Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres")
         @Pattern(
                 regexp = "^(?=.*[A-Z])(?=.*\\d).+$",
