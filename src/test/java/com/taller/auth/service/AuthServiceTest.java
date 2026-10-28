@@ -58,7 +58,7 @@ class AuthServiceTest {
     private AuthServiceImpl authService;
 
     private RegisterRequest request(String role) {
-        return new RegisterRequest("carlos", "carlos@test.com", "Pass123!", role);
+        return new RegisterRequest("carlos", "Pass123!", role);
     }
 
     private void stubSuccessfulRegister(String roleName) {
@@ -67,7 +67,7 @@ class AuthServiceTest {
         when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> inv.getArgument(0));
         when(userMapper.toRegisterResponse(any(Usuario.class))).thenAnswer(inv -> {
             Usuario usuario = inv.getArgument(0);
-            return new RegisterResponse(usuario.getId(), usuario.getUsername(), usuario.getEmail(),
+            return new RegisterResponse(usuario.getId(), usuario.getUsername(),
                     usuario.getRol().getNombre(), usuario.getCreatedAt());
         });
     }
@@ -100,22 +100,7 @@ class AuthServiceTest {
         verify(usuarioRepository, never()).save(any());
     }
 
-    // ---------- RN109: unicidad (email / username) ----------
-
-    @Test
-    void rn109_duplicateEmail_throwsUserAlreadyExists() {
-        when(usuarioRepository.existsByEmail("carlos@test.com")).thenReturn(true);
-        UserAlreadyExistsException ex = assertThrows(UserAlreadyExistsException.class,
-                () -> authService.register(request("MECANICO")));
-        assertEquals("Email already in use", ex.getMessage());
-    }
-
-    @Test
-    void rn109_duplicateEmail_doesNotSave() {
-        when(usuarioRepository.existsByEmail("carlos@test.com")).thenReturn(true);
-        assertThrows(UserAlreadyExistsException.class, () -> authService.register(request("MECANICO")));
-        verify(usuarioRepository, never()).save(any());
-    }
+    // ---------- RN109: unicidad (username) ----------
 
     @Test
     void rn109_duplicateUsername_throwsUserAlreadyExists() {
@@ -126,18 +111,10 @@ class AuthServiceTest {
     }
 
     @Test
-    void rn109_emailIsNormalizedBeforeCheckingUniqueness() {
-        when(usuarioRepository.existsByEmail("carlos@test.com")).thenReturn(true);
-        RegisterRequest upperCaseEmail = new RegisterRequest("carlos", "Carlos@Test.com", "Pass123!", "MECANICO");
-        assertThrows(UserAlreadyExistsException.class, () -> authService.register(upperCaseEmail));
-    }
-
-    @Test
-    void rn109_newEmailAndUsername_savesUser() {
+    void rn109_newUsername_savesUser() {
         stubSuccessfulRegister("MECANICO");
         RegisterResponse response = authService.register(request("MECANICO"));
         assertEquals("carlos", response.username());
-        assertEquals("carlos@test.com", response.email());
         verify(usuarioRepository).save(any(Usuario.class));
     }
 
@@ -145,7 +122,7 @@ class AuthServiceTest {
 
     @Test
     void login_validCredentials_returnsToken() {
-        Usuario usuario = new Usuario("carlos", "carlos@test.com", "hashed", new Rol("MECANICO"));
+        Usuario usuario = new Usuario("carlos", "hashed", new Rol("MECANICO"));
         ReflectionTestUtils.setField(usuario, "id", 1L);
         Authentication authentication = UsernamePasswordAuthenticationToken.authenticated(
                 usuario, null, usuario.getAuthorities());

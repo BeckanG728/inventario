@@ -16,14 +16,14 @@ class RegisterRequestValidationTest {
     @ParameterizedTest
     @ValueSource(strings = {"Ab1", "abcdefg1", "Abcdefgh"})
     void weakPassword_isRejected(String password) {
-        RegisterRequest request = new RegisterRequest("carlos", "carlos@test.com", password, "MECANICO");
+        RegisterRequest request = new RegisterRequest("carlos", password, "MECANICO");
 
         assertFalse(validator.validate(request).isEmpty());
     }
 
     @Test
     void strongPassword_isAccepted() {
-        RegisterRequest request = new RegisterRequest("carlos", "carlos@test.com", "Pass123!", "MECANICO");
+        RegisterRequest request = new RegisterRequest("carlos", "Pass123!", "MECANICO");
 
         assertTrue(validator.validate(request).isEmpty());
     }
@@ -31,14 +31,14 @@ class RegisterRequestValidationTest {
     @ParameterizedTest
     @ValueSource(strings = {"MECANICO", "JEFE_TALLER", "ADMIN"})
     void wellFormedRole_isAccepted(String role) {
-        RegisterRequest request = new RegisterRequest("carlos", "carlos@test.com", "Pass123!", role);
+        RegisterRequest request = new RegisterRequest("carlos", "Pass123!", role);
 
         assertTrue(validator.validate(request).isEmpty());
     }
 
     @Test
     void nullRole_isRejected() {
-        RegisterRequest request = new RegisterRequest("carlos", "carlos@test.com", "Pass123!", null);
+        RegisterRequest request = new RegisterRequest("carlos", "Pass123!", null);
 
         assertFalse(validator.validate(request).isEmpty());
     }
@@ -46,7 +46,7 @@ class RegisterRequestValidationTest {
     @ParameterizedTest
     @ValueSource(strings = {"", "  ", "mecanico", "JEFE TALLER", "MECANICO1"})
     void malformedRole_isRejected(String role) {
-        RegisterRequest request = new RegisterRequest("carlos", "carlos@test.com", "Pass123!", role);
+        RegisterRequest request = new RegisterRequest("carlos", "Pass123!", role);
 
         assertFalse(validator.validate(request).isEmpty());
     }

@@ -46,7 +46,7 @@ class UsuarioDetailsServiceImplTest {
     }
 
     private Usuario usuario(Long id) {
-        Usuario usuario = new Usuario("carlos", "carlos@test.com", "hashed", new Rol("MECANICO"));
+        Usuario usuario = new Usuario("carlos", "hashed", new Rol("MECANICO"));
         ReflectionTestUtils.setField(usuario, "id", id);
         return usuario;
     }

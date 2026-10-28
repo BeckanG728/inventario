@@ -22,7 +22,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleUserAlreadyExists(UserAlreadyExistsException ex,
                                                                  HttpServletRequest req) {
         return error(HttpStatus.CONFLICT, "USER_ALREADY_EXISTS",
-                "Ya existe un usuario con ese email o username", req);
+                "Ya existe un usuario con ese username", req);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

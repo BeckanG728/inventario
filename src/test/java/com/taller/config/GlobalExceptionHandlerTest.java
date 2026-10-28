@@ -34,7 +34,7 @@ class GlobalExceptionHandlerTest {
         request.setRequestURI("/api/auth/register");
 
         ResponseEntity<ErrorResponse> response = handler.handleUserAlreadyExists(
-                new UserAlreadyExistsException("Email already in use"), request);
+                new UserAlreadyExistsException("Username already in use"), request);
 
         assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
         assertEquals("USER_ALREADY_EXISTS", response.getBody().error());

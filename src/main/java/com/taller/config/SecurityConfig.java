@@ -66,7 +66,7 @@ public class SecurityConfig {
                                 errorResponseWriter.write(request, response, HttpStatus.FORBIDDEN,
                                         "FORBIDDEN", "No tiene permisos para realizar esta acción")))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/login", "/actuator/health")
+                        .requestMatchers("/api/auth/login", "/actuator/health", "/error")
                         .permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/register")
                         .hasRole("ADMIN")

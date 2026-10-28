@@ -24,9 +24,6 @@ public class Usuario implements UserDetails {
     @Column(nullable = false, unique = true, length = 50)
     private String username;
 
-    @Column(nullable = false, unique = true, length = 150)
-    private String email;
-
     @Column(nullable = false, length = 100)
     private String password;
 
@@ -43,9 +40,8 @@ public class Usuario implements UserDetails {
     protected Usuario() {
     }
 
-    public Usuario(String username, String email, String password, Rol rol) {
+    public Usuario(String username, String password, Rol rol) {
         this.username = username;
-        this.email = email;
         this.password = password;
         this.rol = rol;
         this.activo = true;
