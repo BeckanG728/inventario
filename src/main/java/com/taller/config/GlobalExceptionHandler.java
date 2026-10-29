@@ -3,6 +3,7 @@ package com.taller.config;
 import com.taller.auth.exception.InvalidCredentialsException;
 import com.taller.auth.exception.InvalidRoleException;
 import com.taller.auth.exception.UserAlreadyExistsException;
+import com.taller.producto.exception.ProductoNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -42,6 +43,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidRoleException.class)
     public ResponseEntity<ErrorResponse> handleInvalidRole(InvalidRoleException ex, HttpServletRequest req) {
         return error(HttpStatus.BAD_REQUEST, "INVALID_ROLE", ex.getMessage(), req);
+    }
+
+    @ExceptionHandler(ProductoNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleProductoNotFound(ProductoNotFoundException ex,
+                                                                HttpServletRequest req) {
+        return error(HttpStatus.NOT_FOUND, "NOT_FOUND", ex.getMessage(), req);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
