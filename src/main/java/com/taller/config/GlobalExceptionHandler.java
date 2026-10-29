@@ -11,6 +11,8 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import com.taller.common.exception.DuplicateResourceException;
+import com.taller.common.exception.ResourceNotFoundException;
 
 import java.time.Instant;
 import java.util.List;
@@ -69,5 +71,17 @@ public class GlobalExceptionHandler {
     private ResponseEntity<ErrorResponse> error(HttpStatus status, String code, String message,
                                                 HttpServletRequest req) {
         return ResponseEntity.status(status).body(ErrorResponse.of(code, message, req.getRequestURI()));
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNotFound(
+            ResourceNotFoundException ex, HttpServletRequest req) {
+        return error(HttpStatus.NOT_FOUND, "NOT_FOUND", ex.getMessage(), req);
+    }
+
+    @ExceptionHandler(DuplicateResourceException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicate(
+            DuplicateResourceException ex, HttpServletRequest req) {
+        return error(HttpStatus.CONFLICT, "DUPLICATE_RESOURCE", ex.getMessage(), req);
     }
 }
