@@ -1,21 +1,3 @@
-CREATE TABLE categoria (
-    id          BIGSERIAL PRIMARY KEY,
-    nombre      VARCHAR(100) NOT NULL UNIQUE,
-    descripcion VARCHAR(500),
-    activo      BOOLEAN      NOT NULL DEFAULT TRUE
-);
-
-CREATE TABLE proveedor (
-    id           BIGSERIAL PRIMARY KEY,
-    ruc          VARCHAR(20)  NOT NULL UNIQUE,
-    razon_social VARCHAR(150) NOT NULL,
-    contacto     VARCHAR(150),
-    telefono     VARCHAR(30),
-    correo       VARCHAR(150),
-    direccion    VARCHAR(255),
-    activo       BOOLEAN      NOT NULL DEFAULT TRUE
-);
-
 CREATE TABLE producto (
     id                  BIGSERIAL PRIMARY KEY,
     codigo              VARCHAR(50)    NOT NULL UNIQUE,
