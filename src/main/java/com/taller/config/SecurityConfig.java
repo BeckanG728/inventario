@@ -75,6 +75,12 @@ public class SecurityConfig {
                                 "/api/categorias/guardar",
                                 "/api/proveedores/guardar")
                         .hasRole("JEFE_TALLER")
+                        .requestMatchers(HttpMethod.POST, "/api/productos")
+                        .hasRole("JEFE_TALLER")
+                        .requestMatchers(HttpMethod.PUT, "/api/productos/**")
+                        .hasRole("JEFE_TALLER")
+                        .requestMatchers(HttpMethod.PATCH, "/api/productos/**")
+                        .hasRole("JEFE_TALLER")
                         .requestMatchers(HttpMethod.POST, "/api/vehiculos")
                         .hasRole("JEFE_TALLER")
                         .anyRequest().authenticated())
