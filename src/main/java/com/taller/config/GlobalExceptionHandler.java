@@ -12,6 +12,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import com.taller.common.exception.DuplicateResourceException;
 import com.taller.common.exception.ResourceNotFoundException;
 
@@ -61,6 +62,16 @@ public class GlobalExceptionHandler {
                 .toList();
         return ResponseEntity.badRequest().body(new ErrorResponse(
                 "VALIDATION_ERROR", "La petición contiene campos no válidos",
+                details, req.getRequestURI(), Instant.now()));
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex,
+                                                            HttpServletRequest req) {
+        List<ErrorResponse.FieldDetail> details = List.of(
+                new ErrorResponse.FieldDetail(ex.getName(), "Formato no válido"));
+        return ResponseEntity.badRequest().body(new ErrorResponse(
+                "VALIDATION_ERROR", "El parámetro '" + ex.getName() + "' no tiene un formato válido",
                 details, req.getRequestURI(), Instant.now()));
     }
 
