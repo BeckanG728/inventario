@@ -118,6 +118,19 @@ public class ProductoServiceImpl implements ProductoService {
         return productoMapper.toResponse(producto);
     }
 
+    @Override
+    @Transactional
+    public ProductoResponse actualizarStockMinimo(Long id, Integer nuevoStockMinimo) {
+        if (nuevoStockMinimo == null || nuevoStockMinimo < 0) {
+            throw new IllegalArgumentException("El stock mínimo debe ser un número entero mayor o igual a 0");
+        }
+
+        Producto producto = obtenerProducto(id);
+        producto.setStockMinimo(nuevoStockMinimo);
+
+        return productoMapper.toResponse(producto);
+    }
+
     private Producto obtenerProducto(Long id) {
         return productoRepository.findById(id)
                 .orElseThrow(() -> new ProductoNotFoundException(id));

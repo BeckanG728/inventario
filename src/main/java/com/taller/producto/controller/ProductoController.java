@@ -1,6 +1,7 @@
 package com.taller.producto.controller;
 
 import com.taller.producto.dto.request.CreateProductoRequest;
+import com.taller.producto.dto.request.StockMinimoRequest;
 import com.taller.producto.dto.request.UpdateProductoRequest;
 import com.taller.producto.dto.response.ProductoResponse;
 import com.taller.producto.service.ProductoService;
@@ -45,6 +46,13 @@ public class ProductoController {
             @PathVariable Long id,
             @Valid @RequestBody UpdateProductoRequest request) {
         return ResponseEntity.ok(productoService.actualizar(id, request));
+    }
+
+    @PutMapping("/{id}/stock-minimo")
+    public ResponseEntity<ProductoResponse> actualizarStockMinimo(
+            @PathVariable Long id,
+            @Valid @RequestBody StockMinimoRequest request) {
+        return ResponseEntity.ok(productoService.actualizarStockMinimo(id, request.nuevoStockMinimo()));
     }
 
     @PatchMapping("/{id}/desactivar")
