@@ -33,4 +33,4 @@ admin:
   password: ${ADMIN_PASSWORD}
 
 alertas:
-  cron: ${ALERTAS_CRON}
+  cron: ${ALERTAS_CRON:0 0 8 * * *}

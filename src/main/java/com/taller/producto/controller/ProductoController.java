@@ -1,6 +1,7 @@
 package com.taller.producto.controller;
 
 import com.taller.producto.dto.request.CreateProductoRequest;
+import com.taller.producto.dto.request.StockMinimoRequest;
 import com.taller.producto.dto.request.UpdateProductoRequest;
 import com.taller.producto.dto.response.ProductoResponse;
 import com.taller.producto.service.ProductoService;
