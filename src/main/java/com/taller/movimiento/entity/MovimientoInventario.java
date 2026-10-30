@@ -3,17 +3,7 @@ package com.taller.movimiento.entity;
 import com.taller.auth.entity.Usuario;
 import com.taller.movimiento.enums.TipoMovimiento;
 import com.taller.producto.entity.Producto;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -65,5 +55,17 @@ public class MovimientoInventario {
     private Usuario usuario;
 
     protected MovimientoInventario() {
+    }
+
+    public MovimientoInventario(TipoMovimiento tipo, Producto producto, Usuario usuario,
+                                Integer stockAnterior, Integer stockPosterior, Integer variacion,
+                                String motivo) {
+        this.tipo = tipo;
+        this.producto = producto;
+        this.usuario = usuario;
+        this.stockAnterior = stockAnterior;
+        this.stockPosterior = stockPosterior;
+        this.variacion = variacion;
+        this.motivo = motivo;
     }
 }
