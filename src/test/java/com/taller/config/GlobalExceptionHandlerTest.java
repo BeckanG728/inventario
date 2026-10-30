@@ -7,6 +7,9 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+
+import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -65,5 +68,21 @@ class GlobalExceptionHandlerTest {
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertEquals("VALIDATION_ERROR", response.getBody().error());
         assertEquals("El rol ADMIN no puede asignarse mediante el registro", response.getBody().message());
+    }
+
+    @Test
+    void methodArgumentTypeMismatch_returnsValidationErrorWithFieldDetail() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/api/reportes/movimientos");
+
+        MethodArgumentTypeMismatchException ex = new MethodArgumentTypeMismatchException(
+                "abc", LocalDate.class, "desde", null, new IllegalArgumentException("formato inválido"));
+
+        ResponseEntity<ErrorResponse> response = handler.handleTypeMismatch(ex, request);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals("VALIDATION_ERROR", response.getBody().error());
+        assertEquals("El parámetro 'desde' no tiene un formato válido", response.getBody().message());
+        assertEquals("desde", response.getBody().details().get(0).field());
     }
 }

@@ -2,6 +2,8 @@ package com.taller.movimiento.controller;
 
 import com.taller.auth.entity.Usuario;
 import com.taller.movimiento.dto.request.AjusteRequest;
+import com.taller.movimiento.dto.request.EntradaRequest;
+import com.taller.movimiento.dto.response.EntradaResponse;
 import com.taller.movimiento.dto.response.MovimientoResponse;
 import com.taller.movimiento.service.MovimientoService;
 import jakarta.validation.Valid;
@@ -28,5 +30,13 @@ public class MovimientoController {
                                                      @AuthenticationPrincipal Usuario usuario) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(movimientoService.ajuste(request, usuario));
+    }
+
+    @PostMapping("/entrada")
+    @PreAuthorize("hasRole('JEFE_TALLER')")
+    public ResponseEntity<EntradaResponse> entrada(@Valid @RequestBody EntradaRequest request,
+                                                   @AuthenticationPrincipal Usuario usuario) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(movimientoService.entrada(request, usuario));
     }
 }
