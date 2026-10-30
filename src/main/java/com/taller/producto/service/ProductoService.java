@@ -14,4 +14,6 @@ public interface ProductoService {
     ProductoResponse actualizar(Long id, UpdateProductoRequest request);
 
     ProductoResponse desactivar(Long id);
+
+    ProductoResponse actualizarStockMinimo(Long id, Integer nuevoStockMinimo);
 }

@@ -11,7 +11,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
+import java.util.List;
 import java.util.Optional;
 
 public interface ProductoRepository extends JpaRepository<Producto, Long>,
@@ -20,6 +20,9 @@ public interface ProductoRepository extends JpaRepository<Producto, Long>,
     @Override
     @EntityGraph(attributePaths = {"categoria", "proveedor"})
     Page<Producto> findAll(Specification<Producto> spec, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"proveedor"})
+    List<Producto> findAllByActivoTrue();
 
     boolean existsByCodigo(String codigo);
 
