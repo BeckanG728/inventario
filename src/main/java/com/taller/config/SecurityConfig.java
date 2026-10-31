@@ -81,6 +81,8 @@ public class SecurityConfig {
                         .hasRole("JEFE_TALLER")
                         .requestMatchers(HttpMethod.PATCH, "/api/productos/**")
                         .hasRole("JEFE_TALLER")
+                        .requestMatchers(HttpMethod.GET, "/api/dashboard")
+                        .hasAnyRole("JEFE_TALLER", "MECANICO")
                         .requestMatchers(HttpMethod.POST, "/api/vehiculos")
                         .hasRole("JEFE_TALLER")
                         .anyRequest().authenticated())
