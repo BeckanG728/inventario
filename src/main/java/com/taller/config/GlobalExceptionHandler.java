@@ -3,6 +3,7 @@ package com.taller.config;
 import com.taller.auth.exception.InvalidCredentialsException;
 import com.taller.auth.exception.InvalidRoleException;
 import com.taller.auth.exception.UserAlreadyExistsException;
+import com.taller.common.exception.StockInsuficienteException;
 import com.taller.producto.exception.ProductoNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -79,6 +80,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleUnreadable(HttpMessageNotReadableException ex, HttpServletRequest req) {
         return error(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR",
                 "La petición contiene un cuerpo JSON no válido", req);
+    }
+
+    @ExceptionHandler(StockInsuficienteException.class)
+    public ResponseEntity<ErrorResponse> handleStockInsuficiente(StockInsuficienteException ex,
+                                                                 HttpServletRequest req) {
+        return error(HttpStatus.CONFLICT, "STOCK_INSUFICIENTE", ex.getMessage(), req);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
