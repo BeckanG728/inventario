@@ -28,4 +28,13 @@ public interface MovimientoReporteRepository extends Repository<MovimientoInvent
     List<MovimientoInventario> findMovimientosBetweenAndTipo(@Param("start") Instant start,
                                                              @Param("end") Instant end,
                                                              @Param("tipo") TipoMovimiento tipo);
+
+    /** Consumos del rango [start, end) con producto y usuario cargados para el reporte. */
+    @Query("select m from MovimientoInventario m "
+            + "join fetch m.producto join fetch m.usuario "
+            + "where m.fecha >= :start and m.fecha < :end and m.tipo = :tipo "
+            + "order by m.fecha asc, m.id asc")
+    List<MovimientoInventario> findMovimientosConDetalleBetweenAndTipo(@Param("start") Instant start,
+                                                                       @Param("end") Instant end,
+                                                                       @Param("tipo") TipoMovimiento tipo);
 }
