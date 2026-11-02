@@ -2,6 +2,7 @@ package com.taller.producto.entity;
 
 import com.taller.catalogo.entity.Categoria;
 import com.taller.catalogo.entity.Proveedor;
+import com.taller.common.exception.StockInsuficienteException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -74,5 +75,30 @@ public class Producto {
         this.proveedor = proveedor;
         this.stockActual = 0;
         this.activo = true;
+    }
+
+    /**
+     * RN206/US-07: descuenta stock validando que el resultado nunca sea negativo.
+     *
+     * @param cantidadASumar cantidad a descontar, debe ser mayor que cero
+     * @throws StockInsuficienteException si el stock resultante quedaría negativo
+     */
+    public void descontarStock(int cantidadASumar) {
+        if (cantidadASumar <= 0) {
+            throw new IllegalArgumentException("La cantidad a descontar debe ser mayor que cero");
+        }
+
+        int stockPosterior;
+        try {
+            stockPosterior = Math.subtractExact(this.stockActual, cantidadASumar);
+        } catch (ArithmeticException ex) {
+            throw new StockInsuficienteException("Stock insuficiente. Quedaría negativo.");
+        }
+
+        if (stockPosterior < 0) {
+            throw new StockInsuficienteException("Stock insuficiente. Quedaría negativo.");
+        }
+
+        this.stockActual = stockPosterior;
     }
 }
