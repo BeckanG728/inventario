@@ -103,7 +103,7 @@ Listado consolidado de las reglas de negocio (RN) del sistema, con el módulo al
 | RN104 | `stockMinimo` numérico >= 0 | M100 (también M300) | US-04, US-08, US-14 |
 | RN105 | Cada producto debe tener un `proveedorPrincipal` activo | M100 | US-04, US-05 |
 | RN106 | El stock inicial de un producto nuevo es **0**. No se permite editar el stock desde el formulario de producto (solo por movimientos) | M100 | US-04 |
-| RN107 | Solo el Jefe de taller podrá administrar productos, categorías y proveedores; el mecánico no podrá modificar estos catálogos. Si el usuario autenticado tiene rol `MECANICO`, los endpoints `/api/productos/guardar`, `/api/categorias/guardar` y `/api/proveedores/guardar` deben devolver `403 FORBIDDEN` | SEC | US-02, US-03 |
+| RN107 | Solo el Jefe de taller podrá administrar productos, categorías y proveedores; el mecánico no podrá modificar estos catálogos. Si el usuario autenticado tiene rol `MECANICO`, los endpoints `POST /api/productos`, `POST /api/categorias` y `POST /api/proveedores` deben devolver `403 FORBIDDEN` | SEC | US-02, US-03 |
 | RN108 | Los productos con movimientos históricos (registros en `movimiento_inventario`) **no** se pueden eliminar físicamente. Solo desactivación lógica (`activo = false`) | M100 | US-04 |
 | RN109 | El RUC del proveedor (`ruc` o código de identificación) debe ser único | M100 | US-02, US-05 |
 | RN201 | El Jefe de taller (rol `JEFE_TALLER`) registra la entrada con producto, proveedor, cantidad y costo unitario. El sistema asigna fecha y usuario automáticamente | M200 | US-06 |
@@ -145,10 +145,10 @@ Gestiona el registro y la autenticación de usuarios. Emite tokens JWT (HS256, v
 
 | **Regla** | **Descripción** |
 |---|---|
-| RN107 | Solo el Jefe de taller podrá administrar productos, categorías y proveedores; el mecánico no podrá modificar estos catálogos. Si el usuario autenticado tiene rol `MECANICO`, los endpoints `/api/productos/guardar`, `/api/categorias/guardar` y `/api/proveedores/guardar` deben devolver `403 FORBIDDEN` |
+| RN107 | Solo el Jefe de taller podrá administrar productos, categorías y proveedores; el mecánico no podrá modificar estos catálogos. Si el usuario autenticado tiene rol `MECANICO`, los endpoints `POST /api/productos`, `POST /api/categorias` y `POST /api/proveedores` deben devolver `403 FORBIDDEN` |
 | RN109 | El RUC del proveedor debe ser único (aplicable en el registro de proveedores; la lógica de unicidad es similar a la del registro de usuarios) |
-| Validación de token | El filtro verifica la firma HS256 usando `jwt.secret`. Si el token es inválido o está caducado, o el usuario no existe o está inactivo, bloquea la petición y devuelve `401` con un código específico (`TOKEN_INVALID`, `TOKEN_EXPIRED` o `ACCOUNT_DISABLED`); sin token devuelve `401 UNAUTHORIZED` |
-| Interceptación | El filtro intercepta las peticiones a `/api/vehiculos/**`, `/api/movimientos/**`, etc. Si el usuario es `MECANICO` y hace `POST /api/vehiculos`, el controlador debe verificar el rol y rechazar |
+| Validación de token | El filtro verifica la firma HS256 usando `jwt.secret`. Si el token es inválido o está caducado, o el usuario no existe o está inactivo, bloquea la petición a endpoints no públicos y devuelve `401` con un código específico (`TOKEN_INVALID`, `TOKEN_EXPIRED` o `ACCOUNT_DISABLED`); sin token devuelve `401 UNAUTHORIZED`. En endpoints públicos, como `POST /api/auth/login`, un token inválido no impide la petición |
+| Interceptación | El filtro intercepta las peticiones a `/api/productos/**`, `/api/categorias/**`, `/api/proveedores/**`, `/api/movimientos/**`, `/api/consumos/**`, etc. Si el usuario es `MECANICO` e intenta modificar los catálogos, el controlador o la configuración de seguridad debe rechazar con `403 FORBIDDEN` |
 
 ### **Endpoints requeridos**
 
@@ -174,7 +174,7 @@ Gestiona el registro y la autenticación de usuarios. Emite tokens JWT (HS256, v
 
 #### **Validaciones:**
 
-1. **Username único:** consultar el repositorio. Si existe, lanzar `RuntimeException("Username already in use")`.
+1. **Username único:** consultar el repositorio. Si existe, lanzar `UserAlreadyExistsException`.
 2. **Password Strength:** mínimo 8 caracteres, al menos 1 mayúscula y 1 número (validación personalizada en el servicio).
 3. **Rol asignación:** el rol indicado en `role` es obligatorio y se asigna tal cual (`MECANICO` o `JEFE_TALLER`). El rol `ADMIN` no se puede asignar por registro (`400 INVALID_ROLE`), porque el usuario administrador se inserta como usuario seed. La regla RN107 restringe permisos después.
 
@@ -213,7 +213,7 @@ Gestiona el registro y la autenticación de usuarios. Emite tokens JWT (HS256, v
 1. Buscar usuario por username.
 2. Verificar contraseña (bcrypt compare).
 3. Si éxito: generar token JWT firmado con `jwt.secret`. El token debe contener los claims `sub` (id usuario), `username` y `role`.
-4. Si fallo: lanzar excepción `RuntimeException("Credenciales inválidas")`.
+4. Si fallo: lanzar `InvalidCredentialsException`.
 
 ### **Implementación de seguridad**
 
@@ -303,7 +303,7 @@ Mantiene el catálogo de productos del taller junto con sus categorías y provee
 #### **Validaciones:**
 
 - Validar que el producto exista.
-- **Reglas RN106 y RN108:** si el producto tiene registros en `movimiento_inventario` (historial), **no permitir** editar campos que afecten al stock o la desactivación directa. Solo permitir editar `nombre`, `descripcion` y `unidadMedida`. Si se intenta cambiar `stockMinimo` o `activo` y hay historial, lanzar excepción.
+- **Reglas RN106 y RN108:** si el producto tiene registros en `movimiento_inventario` (historial), **no permitir** editar campos que afecten al stock. Solo permitir editar `nombre`, `descripcion` y `unidadMedida`. Si se intenta cambiar `stockMinimo` y hay historial, lanzar excepción. El campo `activo` no se modifica desde este endpoint: la desactivación lógica se realiza mediante `PATCH /api/productos/{id}/desactivar`.
 - Si no hay historial, permitir la edición total.
 
 #### **4. PATCH /api/productos/{id}/desactivar**
@@ -314,8 +314,9 @@ Mantiene el catálogo de productos del taller junto con sus categorías y provee
 
 #### **Validaciones:**
 
-- RN108: si hay movimientos, lanzar error: "No se puede desactivar: el producto tiene movimientos registrados. Use la opción de desactivación lógica."
-- Si no hay movimientos, setear `activo = false`.
+- RN108: la eliminación física no está permitida; la desactivación lógica (`activo = false`) es la operación válida y puede aplicarse siempre, incluso si el producto tiene movimientos registrados.
+- Los movimientos históricos se conservan y los reportes los consultan con independencia del estado `activo` del producto, por lo que la desactivación no rompe la trazabilidad.
+- Un producto inactivo no puede usarse en nuevas entradas, consumos ni ajustes, porque las búsquedas de producto exigen `activo = true`.
 
 #### **5. POST /api/categorias**
 
@@ -485,7 +486,7 @@ Registra los movimientos de stock del taller: entradas de productos, consumos de
 - Guardar la entidad `Consumo` (con `fecha`, `finalidad`, `id_usuario` = mecánico, `referenciaVehiculoCliente`).
 - Para cada ítem, guardar un registro en `movimiento_inventario` con tipo `CONSUMO`, restar `cantidad` del `stockActual` del producto y guardar `stockAnterior`/`stockPosterior`.
 
-**Errores:** `StockInsuficienteException` debe ser capturada en el controlador y devuelta al cliente con HTTP 400 y un mensaje claro que indique qué producto no tiene suficiente stock.
+**Errores:** `StockInsuficienteException` debe ser capturada por el handler global y devuelta al cliente con HTTP 409 y el código `STOCK_INSUFICIENTE`, con un mensaje claro que indique qué producto no tiene suficiente stock.
 
 #### **4. POST /api/movimientos/ajuste**
 
@@ -554,7 +555,7 @@ Usa la entidad `Producto` (ver M100) y `Usuario` (ver SEC).
 | fecha | Instant | Fecha del movimiento |
 | tipo | Enum | Tipo de movimiento (ENTRADA, CONSUMO, AJUSTE) |
 | cantidad | Integer | Cantidad (entradas y consumos) |
-| variacion | Integer | Variación (ajustes) |
+| variacion | Integer | Variación firmada respecto al stock anterior. En entradas es `+cantidad`; en ajustes, `cantidadFisica - stockAnterior`; en consumos el descuento se conserva en `cantidad` y `variacion` puede quedar `null` |
 | stockAnterior | Integer | Stock anterior |
 | stockPosterior | Integer | Stock posterior |
 | costoUnitario | BigDecimal | Costo de la entrada |
@@ -621,7 +622,7 @@ Se implementa con el servicio `AlertaService` y un scheduled task o trigger (eje
 
 1. Consultar los productos activos donde `stockActual <= stockMinimo`.
 2. Para cada uno, tomar el nombre del proveedor principal (razón social o contacto), si existe.
-3. Calcular la cantidad sugerida `stockMinimo - stockActual` (RN305) y generar la alerta solo si es mayor que 0.
+3. Calcular la cantidad sugerida `stockMinimo - stockActual` (RN305) y generar la alerta cuando `stockActual <= stockMinimo` (RN302); la cantidad sugerida puede ser 0.
 4. Retornar la lista de `AlertaStock` con código, nombre, stock actual, stock mínimo, cantidad sugerida y proveedor.
 
 Si la lista está vacía, el sistema informa que "No hay productos con bajo stock" (RN302, flanco positivo).
@@ -757,12 +758,14 @@ Requiere las dependencias `itextpdf` o `poi` (Apache POI) en `pom.xml`. La imple
 
 **Acceso:** JEFE_TALLER y MECANICO
 
-**Descripción:** Resumen ejecutivo. Agrega datos de los módulos internos y retorna un DTO de Dashboard que incluye:
+**Descripción:** Resumen ejecutivo adaptado al inventario. Agrega datos de los módulos internos y retorna un DTO de Dashboard con estos campos (contrato en inglés):
 
-- `fleet`: total de vehículos, disponibles, en mantenimiento, etc. (de US-08 / M200).
-- `kpis`: rutas completadas, distancia total, costo de combustible, costo de mantenimiento (de US-17/18/20).
-- `alertas`: cantidad total de alertas abiertas (de US-15/16).
-- `upcomingMaintenance`: las 5 próximas órdenes de mantenimiento pendientes (de US-13).
+- `inventory`: total de productos activos, productos en stock normal, productos en bajo stock y productos sin stock.
+- `kpis`: valor estimado del inventario, productos sin costo, entradas del mes, consumos del mes y ajustes del mes.
+- `alerts`: cantidad total de alertas y las alertas más urgentes (de US-15/16).
+- `recentMovements`: los 5 movimientos más recientes con producto, tipo, cantidad, variación y usuario.
+
+> El código actual mantiene nombres internos equivalentes en español; su unificación al inglés queda en la tarea pendiente al final del plan.
 
 #### **7. GET /api/estadisticas**
 
@@ -820,12 +823,12 @@ Agrupa las tareas que afectan a todo el sistema: el README y Swagger (US-26) y l
 
 ## **Comunicación entre módulos**
 
-Los módulos se ejecutan en el mismo proceso y se comunican mediante llamadas a sus servicios, sin llamadas HTTP entre ellos. Un único `JwtAuthFilter` valida el JWT de todas las peticiones externas.
+Los módulos se ejecutan en el mismo proceso y se comunican mediante llamadas a sus servicios, sin llamadas HTTP entre ellos. Un único `JwtAuthFilter` valida el JWT de todas las peticiones externas no públicas.
 
 ### **Autenticación**
 
-- **Peticiones externas:** cabecera `Authorization: Bearer <token>`. El filtro verifica la firma HS256 con `jwt.secret`, lee el claim `sub`, carga al usuario desde la base de datos y usa su rol actual para decidir el acceso.
-- **Endpoints públicos:** solo `POST /api/auth/login`. `POST /api/auth/register` requiere un token de `ADMIN`.
+- **Peticiones externas:** cabecera `Authorization: Bearer <token>`. El filtro verifica la firma HS256 con `jwt.secret`, lee el claim `sub`, carga al usuario desde la base de datos y usa su rol actual para decidir el acceso. La validación estricta del token aplica solo a endpoints no públicos.
+- **Endpoints públicos:** solo `POST /api/auth/login`. En estos endpoints un token inválido o ausente no bloquea la petición. `POST /api/auth/register` requiere un token de `ADMIN`.
 
 ### **Mapa de dependencias**
 
@@ -857,7 +860,7 @@ Todos los endpoints de la API (`/api`) devuelven los errores con esta estructura
 |---|---|---|
 | `error` | String | Código del error (ej: `VALIDATION_ERROR`) |
 | `message` | String | Mensaje descriptivo del error, sin información técnica sensible |
-| `details` | Array | Detalle de errores por campo (validaciones). Cada elemento: `{ "field": "...", "reason": "..." }` |
+| `details` | Array (opcional) | Detalle de errores por campo (validaciones). Cada elemento: `{ "field": "...", "reason": "..." }`. Se incluye solo cuando el error tiene detalles; no es obligatorio en errores sin validaciones por campo |
 | `endpoint` | String | Endpoint sobre el que ocurrió el error (ej: `/api/movimientos/entrada`) |
 | `timestamp` | String (ISO 8601) | Momento de la ocurrencia del error (ej: `2026-10-05T10:30:00Z`) |
 
@@ -880,7 +883,7 @@ Ejemplo de respuesta (error de validación):
 
 | **HTTP** | **Código** | **Cuándo** |
 |---|---|---|
-| 400 | VALIDATION_ERROR | Algún campo no cumple las validaciones (manejo de `RuntimeException`); `StockInsuficienteException` en el registro de consumos |
+| 400 | VALIDATION_ERROR, INVALID_ROLE | Algún campo no cumple las validaciones (validación de beans o `IllegalArgumentException`); rol inexistente o intento de asignar `ADMIN` mediante el registro (`INVALID_ROLE`) |
 | 401 | UNAUTHORIZED, TOKEN_INVALID, TOKEN_EXPIRED, ACCOUNT_DISABLED, INVALID_CREDENTIALS | Sin token, token inválido o caducado, cuenta desactivada, o credenciales incorrectas |
 | 403 | FORBIDDEN | El rol del usuario no tiene permiso |
 | 404 | — | El recurso no existe |
@@ -891,15 +894,17 @@ Ejemplo de respuesta (error de validación):
 
 Dado que no hay valores por defecto y las validaciones son estrictas, es crucial tener un controlador de excepciones global (`GlobalExceptionHandler`, con `@RestControllerAdvice`, en `com.taller.config`):
 
-- `RuntimeException` se responde con `400` y el código `VALIDATION_ERROR`, con el mensaje de la excepción.
-- `StockInsuficienteException` (excepción personalizada) se responde con `409` y el código `STOCK_INSUFICIENTE`.
-- Ambas respuestas siguen el contrato de errores común: `endpoint` lleva la URI de la petición y `timestamp` el momento del error.
+- Las excepciones de validación (`IllegalArgumentException`, errores de bean validation, tipo de parámetro y JSON no legible) se responden con `400` y el código `VALIDATION_ERROR`; `InvalidRoleException` se responde con `400` y el código `INVALID_ROLE`.
+- Las excepciones específicas de dominio se responden con su código propio y su estado HTTP: `404 NOT_FOUND` (`ProductoNotFoundException`, `ResourceNotFoundException`), `409 USER_ALREADY_EXISTS`, `409 DUPLICATE_RESOURCE`, `409 DATA_INTEGRITY_VIOLATION`, `409 STOCK_INSUFICIENTE` y `401 INVALID_CREDENTIALS`.
+- No se captura `RuntimeException` de forma genérica: los errores no previstos se propagan como `500`, para no enmascarar fallos internos.
+- Las respuestas siguen el contrato de errores común: `endpoint` lleva la URI de la petición y `timestamp` el momento del error; `details` solo aparece cuando hay detalles por campo.
 
 ### **Convenciones comunes**
 
 - Todo el código y los identificadores están en inglés; las tablas y columnas usan snake_case en minúsculas.
 - Los identificadores de las entidades son `Long`.
-- Los instantes usan ISO-8601 (ej: `2026-10-05T10:30:00Z`).
+- Los instantes se almacenan y transportan en UTC (ISO-8601, ej: `2026-10-05T10:30:00Z`).
+- La zona horaria de negocio es `America/Lima`: los rangos de fechas, los cortes de mes/semana/día y las fechas mostradas en reportes se calculan en esa zona, sin alterar el almacenamiento UTC.
 - La paginación usa los parámetros `page` y `size`.
 - Los endpoints usan el prefijo `/api`, recursos en plural y los verbos HTTP según su función.
 - Toda entrada de usuario se valida en backend antes de procesarse.
@@ -948,29 +953,6 @@ management:
 ### **Configuración de seguridad y JWT (Fail-Fast)**
 
 La clase `AppConfig` (`com.taller.config`, Java 21) carga las propiedades `jwt.secret`, `jwt.expiration`, `admin.username` y `admin.password` (las dos últimas definen el usuario `ADMIN` seed) y valida al arrancar (`@PostConstruct`) las de JWT. Si `jwt.secret` es nulo o vacío, si tiene menos de 32 bytes (mínimo para HS256) o si `jwt.expiration` es nula o menor o igual que 0, lanza `IllegalStateException` con un mensaje que empieza por "FATAL" y la aplicación no inicia. Expone un getter para cada propiedad.
-
-### **Variables de entorno obligatorias (.env)**
-
-El archivo `.env` (que debe estar en `.gitignore`) debe contener obligatoriamente:
-
-```env
-# Base de Datos
-POSTGRES_URL=jdbc:postgresql://db:5432/inventario_taller
-POSTGRES_USER=admin_taller
-POSTGRES_PASSWORD=S3gur@W1nd3r
-
-# Seguridad
-JWT_SECRET=una_cadena_muy_segura_de_minimo_64_caracteres_aqui
-JWT_EXPIRACION_SEGUNDOS=3600
-
-# Aplicación
-SERVER_PORT=8080
-SPRING_PROFILES_ACTIVE=prod
-
-# Usuario ADMIN seed
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=Admin123!
-```
 
 ### **Migraciones Flyway y versionado**
 
@@ -1048,7 +1030,7 @@ La columna "Depende de" se dedujo de lo que cada historia consume.
 #### **Criterios de aceptación:**
 
 - El proyecto se levanta con `mvn spring-boot:run` o `java -jar`.
-- Si faltan `jwt.secret` o `db.url`, la aplicación no inicia (validación en `AppConfig`).
+- Si falta `jwt.secret`, la aplicación no inicia (validación en `AppConfig`).
 - Si `AppConfig.validateEnvironment()` lanza excepción, la terminal muestra el mensaje de error y se detiene.
 - Las rutas de los controladores no incluyen versión.
 
@@ -1068,9 +1050,9 @@ La columna "Depende de" se dedujo de lo que cada historia consume.
 
 #### **Criterios de aceptación:**
 
-- Con username único, `POST /api/auth/register` crea el usuario; si ya existe, lanza `RuntimeException("Username already in use")` (`409 USER_ALREADY_EXISTS`).
+- Con username único, `POST /api/auth/register` crea el usuario; si ya existe, lanza `UserAlreadyExistsException` (`409 USER_ALREADY_EXISTS`).
 - Una contraseña de menos de 8 caracteres, sin mayúscula o sin número se rechaza.
-- El rol es obligatorio: sin `role` o con formato inválido se rechaza con `400 VALIDATION_ERROR`.
+- El rol es obligatorio: sin `role` o con formato inválido se rechaza con `400 VALIDATION_ERROR`; si el rol no existe o es `ADMIN`, se rechaza con `400 INVALID_ROLE`.
 - El usuario `ADMIN` existe como usuario seed y el rol `ADMIN` no se puede asignar mediante `POST /api/auth/register`, que solo puede invocar un usuario `ADMIN`.
 - Con credenciales correctas, `POST /api/auth/login` devuelve un JWT con los claims `sub`, `username` y `role`; con credenciales incorrectas devuelve `401 INVALID_CREDENTIALS`.
 
@@ -1085,9 +1067,9 @@ La columna "Depende de" se dedujo de lo que cada historia consume.
 
 #### **Criterios de aceptación:**
 
-- Con un token inválido o caducado, o de un usuario inexistente o inactivo, se bloquea la petición y se devuelve `401` (`TOKEN_INVALID`, `TOKEN_EXPIRED` o `ACCOUNT_DISABLED`); sin token, `401 UNAUTHORIZED`.
-- Con un usuario de rol `MECANICO`, los endpoints `/api/productos/guardar`, `/api/categorias/guardar` y `/api/proveedores/guardar` devuelven `403 FORBIDDEN`.
-- Si el usuario es `MECANICO` y hace `POST /api/vehiculos`, el controlador verifica el rol y rechaza.
+- Con un token inválido o caducado, o de un usuario inexistente o inactivo, se bloquea la petición a endpoints no públicos y se devuelve `401` (`TOKEN_INVALID`, `TOKEN_EXPIRED` o `ACCOUNT_DISABLED`); sin token, `401 UNAUTHORIZED`. En endpoints públicos un token inválido no impide la petición.
+- Con un usuario de rol `MECANICO`, los endpoints `POST /api/productos`, `POST /api/categorias` y `POST /api/proveedores` devuelven `403 FORBIDDEN`.
+- Si el usuario es `MECANICO` e intenta modificar los catálogos, el controlador o la configuración de seguridad verifica el rol y rechaza con `403 FORBIDDEN`.
 
 ### **Módulo M100 — US-04 y US-05**
 
@@ -1108,8 +1090,8 @@ La columna "Depende de" se dedujo de lo que cada historia consume.
 
 - `POST /api/productos` rechaza un `codigo` repetido, exige categoría y proveedor activos, y crea el producto con `stockActual = 0` y `activo = true` (`201 Created`).
 - `GET /api/productos` es paginado, filtra por `nombre` (parcial, insensible a mayúsculas) o `categoria`, y muestra `stockActual` y `stockCritico`.
-- `PUT /api/productos/{id}` valida que el producto exista y, con historial en `movimiento_inventario`, solo permite editar `nombre`, `descripcion` y `unidadMedida`; si intenta cambiar `stockMinimo` o `activo`, lanza excepción.
-- `PATCH /api/productos/{id}/desactivar` rechaza la desactivación si hay movimientos registrados (RN108).
+- `PUT /api/productos/{id}` valida que el producto exista y, con historial en `movimiento_inventario`, solo permite editar `nombre`, `descripcion` y `unidadMedida`; si intenta cambiar `stockMinimo`, lanza excepción. El campo `activo` no se modifica por esta vía.
+- `PATCH /api/productos/{id}/desactivar` aplica desactivación lógica (RN108) sin bloquear por movimientos registrados; la eliminación física no existe y el historial se conserva.
 
 #### **US-05 — Gestión de categorías y proveedores**
 
@@ -1213,7 +1195,7 @@ La columna "Depende de" se dedujo de lo que cada historia consume.
 #### **Criterios de aceptación:**
 
 - El consumo es atómico: todo o nada.
-- `StockInsuficienteException` se captura en el controlador y se devuelve al cliente con HTTP 400 y un mensaje claro que indica qué producto no tiene suficiente stock.
+- `StockInsuficienteException` se captura en el handler global y se devuelve al cliente con HTTP 409 y el código `STOCK_INSUFICIENTE`, con un mensaje claro que indica qué producto no tiene suficiente stock.
 
 #### **US-13 — Registro de ajustes de inventario**
 
@@ -1375,7 +1357,7 @@ La columna "Depende de" se dedujo de lo que cada historia consume.
 
 #### **Criterios de aceptación:**
 
-- Agrega datos de los módulos internos y retorna un DTO de Dashboard con `fleet`, `kpis`, `alertas` y `upcomingMaintenance`.
+- Agrega datos de los módulos internos y retorna un DTO de Dashboard con `inventory`, `kpis`, `alerts` y `recentMovements`.
 - Solo pueden consultarlo los roles `JEFE_TALLER` y `MECANICO`.
 
 #### **US-23 — Series temporales: estadísticas de movimientos**
@@ -1441,3 +1423,7 @@ Historia opcional: se deja al final, después de la documentación (US-26), y no
 
 - Cada regla crítica tiene un mínimo de 5 tests.
 - `mvn test` ejecuta los tests y todos pasan.
+
+## **Tareas pendientes**
+
+- [ ] Unificar toda la nomenclatura del código a inglés (paquetes, clases, DTOs, campos, métodos y mensajes internos), manteniendo estables las rutas y los contratos públicos.

@@ -11,80 +11,47 @@ Documento generado a partir del código actual: controladores, DTOs, `SecurityCo
 
 ## 1. Roles
 
-| Rol           | Descripción                                                                                                |
-|---------------|------------------------------------------------------------------------------------------------------------|
-| `ADMIN`       | Usuario semilla. Único rol que puede registrar usuarios. No puede asignarse mediante `/api/auth/register`. |
-| `JEFE_TALLER` | Administra catálogo, productos, entradas y ajustes de inventario.                                          |
-| `MECANICO`    | Consulta productos, existencias y alertas. No accede a dashboard, reportes ni estadísticas. No modifica catálogo ni stock. |
+| Rol           | Descripción                                                                                                                                            |
+|---------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `ADMIN`       | Usuario semilla. Único rol que puede registrar usuarios. No puede asignarse mediante `/api/auth/register`.                                             |
+| `JEFE_TALLER` | Administra catálogo, productos, entradas y ajustes de inventario.                                                                                      |
+| `MECANICO`    | Registra consumos y consulta productos, existencias y alertas. No accede a dashboard, reportes ni estadísticas. No modifica catálogo ni stock directo. |
 
-## 2. Contrato de error
+## 2. Resumen de endpoints y matriz de acceso
 
-Todas las excepciones controladas por `GlobalExceptionHandler` usan este formato:
-
-```json
-{
-  "error": "VALIDATION_ERROR",
-  "message": "La petición contiene campos no válidos",
-  "details": [
-    {
-      "field": "nombre",
-      "reason": "El nombre es obligatorio"
-    }
-  ],
-  "endpoint": "/api/productos",
-  "timestamp": "2026-10-31T15:04:05Z"
-}
-```
-
-`details` se omite cuando está vacío (`@JsonInclude(NON_EMPTY)`).
-
-| HTTP | Código `error`             | Causa                                                                                                          |
-|------|----------------------------|----------------------------------------------------------------------------------------------------------------|
-| 400  | `VALIDATION_ERROR`         | Bean Validation, JSON inválido, parámetro con formato inválido, regla de negocio (`IllegalArgumentException`). |
-| 400  | `INVALID_ROLE`             | Rol inexistente o intento de registrar `ADMIN`.                                                                |
-| 401  | `INVALID_CREDENTIALS`      | Usuario o contraseña incorrectos en login.                                                                     |
-| 401  | `UNAUTHORIZED`             | Falta el token.                                                                                                |
-| 401  | `TOKEN_EXPIRED`            | Token expirado.                                                                                                |
-| 401  | `TOKEN_INVALID`            | Token malformado o usuario inexistente.                                                                        |
-| 401  | `ACCOUNT_DISABLED`         | Usuario inactivo.                                                                                              |
-| 403  | `FORBIDDEN`                | Rol sin permisos para la operación.                                                                            |
-| 404  | `NOT_FOUND`                | Producto o recurso inexistente.                                                                                |
-| 409  | `USER_ALREADY_EXISTS`      | Username ya registrado.                                                                                        |
-| 409  | `DUPLICATE_RESOURCE`       | Categoría duplicada (nombre) o proveedor duplicado (RUC).                                                      |
-| 409  | `DATA_INTEGRITY_VIOLATION` | Violación de restricción de base de datos.                                                                     |
-
-> Las excepciones no controladas devuelven el formato de error por defecto de Spring (HTTP 500), no este contrato.
-
-## 3. Resumen de endpoints y matriz de acceso
-
-| Dominio         | Método | Ruta                               | ADMIN | JEFE_TALLER | MECANICO | Público |
-|-----------------|--------|------------------------------------|:-----:|:-----------:|:--------:|:-------:|
-| Seguridad       | POST   | `/api/auth/register`               |  ✅   |     ❌      |    ❌    |    —    |
-| Seguridad       | POST   | `/api/auth/login`                  |   —   |      —      |    —     |   ✅    |
-| Catálogo        | POST   | `/api/categorias`                  |  ❌   |     ✅      |    ❌    |    —    |
-| Catálogo        | POST   | `/api/proveedores`                 |  ❌   |     ✅      |    ❌    |    —    |
-| Productos       | POST   | `/api/productos`                   |  ❌   |     ✅      |    ❌    |    —    |
-| Productos       | GET    | `/api/productos`                   |  ❌   |     ✅      |    ✅    |    —    |
-| Productos       | PUT    | `/api/productos/{id}`              |  ❌   |     ✅      |    ❌    |    —    |
-| Productos       | PUT    | `/api/productos/{id}/stock-minimo` |  ❌   |     ✅      |    ❌    |    —    |
-| Productos       | PATCH  | `/api/productos/{id}/desactivar`   |  ❌   |     ✅      |    ❌    |    —    |
-| Inventario      | GET    | `/api/existencias`                 |  ❌   |     ✅      |    ✅    |    —    |
-| Inventario      | POST   | `/api/movimientos/entrada`         |  ❌   |     ✅      |    ❌    |    —    |
-| Inventario      | POST   | `/api/movimientos/ajuste`          |  ❌   |     ✅      |    ❌    |    —    |
-| Alertas         | GET    | `/api/alertas`                     |  ❌   |     ✅      |    ✅    |    —    |
-| Dashboard       | GET    | `/api/dashboard`                   |  ❌   |     ✅      |    ❌    |    —    |
-| Reportes        | GET    | `/api/reportes/movimientos`        |  ❌   |     ✅      |    ❌    |    —    |
-| Reportes        | GET    | `/api/reportes/valor-inventario`   |  ❌   |     ✅      |    ❌    |    —    |
-| Reportes        | GET    | `/api/reportes/bajo-stock`         |  ❌   |     ✅      |    ❌    |    —    |
-| Estadísticas    | GET    | `/api/estadisticas`                |  ❌   |     ✅      |    ❌    |    —    |
-| Infraestructura | GET    | `/actuator/health`                 |   —   |      —      |    —     |   ✅    |
-| Infraestructura | GET    | `/actuator/info`                   |  ✅   |     ❌      |    ❌    |    —    |
+| Dominio         | Método | Ruta                                 | ADMIN | JEFE_TALLER | MECANICO | Público |
+|-----------------|--------|--------------------------------------|:-----:|:-----------:|:--------:|:-------:|
+| Seguridad       | POST   | `/api/auth/register`                 |  ✅   |     ❌      |    ❌    |    —    |
+| Seguridad       | POST   | `/api/auth/login`                    |   —   |      —      |    —     |   ✅    |
+| Catálogo        | POST   | `/api/categorias`                    |  ❌   |     ✅      |    ❌    |    —    |
+| Catálogo        | POST   | `/api/proveedores`                   |  ❌   |     ✅      |    ❌    |    —    |
+| Productos       | POST   | `/api/productos`                     |  ❌   |     ✅      |    ❌    |    —    |
+| Productos       | GET    | `/api/productos`                     |  ❌   |     ✅      |    ✅    |    —    |
+| Productos       | PUT    | `/api/productos/{id}`                |  ❌   |     ✅      |    ❌    |    —    |
+| Productos       | PUT    | `/api/productos/{id}/stock-minimo`   |  ❌   |     ✅      |    ❌    |    —    |
+| Productos       | PATCH  | `/api/productos/{id}/desactivar`     |  ❌   |     ✅      |    ❌    |    —    |
+| Inventario      | GET    | `/api/existencias`                   |  ❌   |     ✅      |    ✅    |    —    |
+| Inventario      | POST   | `/api/movimientos/entrada`           |  ❌   |     ✅      |    ❌    |    —    |
+| Inventario      | POST   | `/api/movimientos/ajuste`            |  ❌   |     ✅      |    ❌    |    —    |
+| Inventario      | POST   | `/api/consumos`                      |  ❌   |     ✅      |    ✅    |    —    |
+| Alertas         | GET    | `/api/alertas`                       |  ❌   |     ✅      |    ✅    |    —    |
+| Dashboard       | GET    | `/api/dashboard`                     |  ❌   |     ✅      |    ❌    |    —    |
+| Reportes        | GET    | `/api/reportes/movimientos`          |  ❌   |     ✅      |    ❌    |    —    |
+| Reportes        | GET    | `/api/reportes/consumo`              |  ❌   |     ✅      |    ❌    |    —    |
+| Reportes        | GET    | `/api/reportes/valor-inventario`     |  ❌   |     ✅      |    ❌    |    —    |
+| Reportes        | GET    | `/api/reportes/bajo-stock`           |  ❌   |     ✅      |    ❌    |    —    |
+| Exportación     | GET    | `/api/reportes/movimientos/exportar` |  ❌   |     ✅      |    ❌    |    —    |
+| Exportación     | GET    | `/api/reportes/consumo/exportar`     |  ❌   |     ✅      |    ❌    |    —    |
+| Exportación     | GET    | `/api/reportes/bajo-stock/exportar`  |  ❌   |     ✅      |    ❌    |    —    |
+| Estadísticas    | GET    | `/api/estadisticas`                  |  ❌   |     ✅      |    ❌    |    —    |
+| Infraestructura | GET    | `/actuator/health`                   |   —   |      —      |    —     |   ✅    |
+| Infraestructura | GET    | `/actuator/info`                     |   —   |      —      |    —     |   ✅    |
 
 ---
 
-## 4. Dominio: Seguridad
+## 3. Dominio: Seguridad
 
-### 4.1 POST `/api/auth/register`
+### 3.1 POST `/api/auth/register`
 
 Registra un usuario con rol `JEFE_TALLER` o `MECANICO`. El rol `ADMIN` está prohibido.
 
@@ -120,7 +87,7 @@ Registra un usuario con rol `JEFE_TALLER` o `MECANICO`. El rol `ADMIN` está pro
 
 ---
 
-### 4.2 POST `/api/auth/login`
+### 3.2 POST `/api/auth/login`
 
 Autentica un usuario y emite un JWT.
 
@@ -157,9 +124,9 @@ Autentica un usuario y emite un JWT.
 
 ---
 
-## 5. Dominio: Catálogo (categorías y proveedores)
+## 4. Dominio: Catálogo (categorías y proveedores)
 
-### 5.1 POST `/api/categorias`
+### 4.1 POST `/api/categorias`
 
 Crea una categoría. El nombre es obligatorio y único sin distinguir mayúsculas/minúsculas.
 
@@ -193,7 +160,7 @@ Crea una categoría. El nombre es obligatorio y único sin distinguir mayúscula
 
 ---
 
-### 5.2 POST `/api/proveedores`
+### 4.2 POST `/api/proveedores`
 
 Crea un proveedor. El RUC es obligatorio y único.
 
@@ -241,9 +208,9 @@ Crea un proveedor. El RUC es obligatorio y único.
 
 ---
 
-## 6. Dominio: Productos
+## 5. Dominio: Productos
 
-### 6.1 POST `/api/productos`
+### 5.1 POST `/api/productos`
 
 Crea un producto. El stock inicial siempre es `0`; el SKU se genera automáticamente con el patrón `CP-000000`.
 
@@ -274,13 +241,13 @@ Los campos `id_categoria` e `id_proveedor` aceptan como alias `idCategoria`/`cat
 }
 ```
 
-- **Respuesta 201 Created:** objeto `ProductoResponse` (ver sección 6.6).
-- **Errores:** `400 VALIDATION_ERROR` (incluye código duplicado, categoría/proveedor inexistente o inactivo), `401`,
-  `403 FORBIDDEN`.
+- **Respuesta 201 Created:** objeto `ProductoResponse` (ver sección 5.6).
+- **Errores:** `400 VALIDATION_ERROR` (incluye categoría/proveedor inexistente o inactivo), `401`, `403 FORBIDDEN`,
+  `409 DUPLICATE_RESOURCE` (el `codigo` ya existe).
 
 ---
 
-### 6.2 GET `/api/productos`
+### 5.2 GET `/api/productos`
 
 Lista productos con paginación y filtros opcionales.
 
@@ -295,7 +262,7 @@ Lista productos con paginación y filtros opcionales.
 | `categoria` | integer | No          | —       | Filtra por ID de categoría                             |
 
 - **Ejemplo:** `GET /api/productos?page=0&size=10&nombre=filtro&categoria=3`
-- **Respuesta 200 OK:** página de Spring con `content` de `ProductoResponse`.
+- **Respuesta 200 OK:** `content` (lista de `ProductoResponse`) más cuatro campos de paginación.
 
 ```json
 {
@@ -318,36 +285,27 @@ Lista productos con paginación y filtros opcionales.
       "proveedorRazonSocial": "Repuestos Andinos S.A."
     }
   ],
-  "pageable": {
-    "pageNumber": 0,
-    "pageSize": 10,
-    "offset": 0,
-    "paged": true,
-    "unpaged": false,
-    "sort": {
-      "empty": false,
-      "sorted": true,
-      "unsorted": false
-    }
-  },
-  "totalElements": 1,
-  "totalPages": 1,
-  "last": true,
+  "page": 0,
   "size": 10,
-  "number": 0,
-  "numberOfElements": 1,
-  "first": true,
-  "empty": false
+  "totalElements": 25,
+  "totalPages": 3
 }
 ```
 
-Orden por defecto: `nombre` ascendente y luego `id`.
+| Campo           | Tipo    | Descripción                                  |
+|-----------------|---------|----------------------------------------------|
+| `page`          | integer | Número de la página actual (empieza en `0`)  |
+| `size`          | integer | Tamaño de página aplicado                    |
+| `totalElements` | integer | Total de registros que cumplen el filtro     |
+| `totalPages`    | integer | Total de páginas                             |
+
+Orden por defecto: `nombre` ascendente y luego `id`. El listado incluye también productos inactivos.
 
 - **Errores:** `400 VALIDATION_ERROR` (parámetro con formato inválido), `401`, `403 FORBIDDEN`.
 
 ---
 
-### 6.3 PUT `/api/productos/{id}`
+### 5.3 PUT `/api/productos/{id}`
 
 Actualiza un producto completo.
 
@@ -367,14 +325,15 @@ Actualiza un producto completo.
 | `id_proveedor` | integer | Sí          | `> 0`, existente y activo             |
 
 - **Respuesta 200 OK:** `ProductoResponse`.
-- **Errores:** `400 VALIDATION_ERROR`, `401`, `403 FORBIDDEN`, `404 NOT_FOUND`.
+- **Errores:** `400 VALIDATION_ERROR`, `401`, `403 FORBIDDEN`, `404 NOT_FOUND`, `409 DUPLICATE_RESOURCE` (el `codigo`
+  ya pertenece a otro producto).
 
 > Si el producto ya tiene movimientos registrados, solo se permite cambiar `nombre`, `descripcion` y `unidadMedida`;
 > `codigo`, `stockMinimo`, `activo`, categoría y proveedor deben enviarse sin cambios (si no, `400`).
 
 ---
 
-### 6.4 PUT `/api/productos/{id}/stock-minimo`
+### 5.4 PUT `/api/productos/{id}/stock-minimo`
 
 Actualiza únicamente el stock mínimo.
 
@@ -399,7 +358,7 @@ Actualiza únicamente el stock mínimo.
 
 ---
 
-### 6.5 PATCH `/api/productos/{id}/desactivar`
+### 5.5 PATCH `/api/productos/{id}/desactivar`
 
 Desactiva lógicamente un producto (`activo = false`).
 
@@ -407,11 +366,13 @@ Desactiva lógicamente un producto (`activo = false`).
 - **Path:** `id` (integer, obligatorio)
 - **Body:** ninguno.
 - **Respuesta 200 OK:** `ProductoResponse` con `activo: false`.
-- **Errores:** `400 VALIDATION_ERROR` (producto con movimientos), `401`, `403 FORBIDDEN`, `404 NOT_FOUND`.
+- **Errores:** `401`, `403 FORBIDDEN`, `404 NOT_FOUND`.
+
+> La desactivación lógica se puede aplicar siempre, incluso si el producto tiene movimientos registrados (RN108).
 
 ---
 
-### 6.6 Estructura `ProductoResponse`
+### 5.6 Estructura `ProductoResponse`
 
 | Campo                  | Tipo    | Descripción                             |
 |------------------------|---------|-----------------------------------------|
@@ -433,9 +394,9 @@ Desactiva lógicamente un producto (`activo = false`).
 
 ---
 
-## 7. Dominio: Inventario (existencias y movimientos)
+## 6. Dominio: Inventario (existencias y movimientos)
 
-### 7.1 GET `/api/existencias`
+### 6.1 GET `/api/existencias`
 
 Consulta el stock de uno o varios productos activos.
 
@@ -462,11 +423,12 @@ Consulta el stock de uno o varios productos activos.
 ]
 ```
 
-- **Errores:** `400 VALIDATION_ERROR` (sin `ids`, producto inactivo), `401`, `403 FORBIDDEN`, `404 NOT_FOUND` (algún ID no existe).
+- **Errores:** `400 VALIDATION_ERROR` (sin `ids`, producto inactivo), `401`, `403 FORBIDDEN`, `404 NOT_FOUND` (algún ID
+  no existe).
 
 ---
 
-### 7.2 POST `/api/movimientos/entrada`
+### 6.2 POST `/api/movimientos/entrada`
 
 Registra una entrada de stock, incrementa `stockActual` y actualiza `costoUltimaCompra`. El usuario y la fecha se toman
 del token.
@@ -519,7 +481,7 @@ El campo `producto` contiene el `ProductoResponse` actualizado.
 
 ---
 
-### 7.3 POST `/api/movimientos/ajuste`
+### 6.3 POST `/api/movimientos/ajuste`
 
 Registra un ajuste de inventario fijando la cantidad física real. No modifica el costo de última compra.
 
@@ -545,7 +507,7 @@ Registra un ajuste de inventario fijando la cantidad física real. No modifica e
 
 ---
 
-### 7.4 Estructura `MovimientoResponse`
+### 6.4 Estructura `MovimientoResponse`
 
 | Campo            | Tipo             | Descripción                                                          |
 |------------------|------------------|----------------------------------------------------------------------|
@@ -562,13 +524,83 @@ Registra un ajuste de inventario fijando la cantidad física real. No modifica e
 | `consumoId`      | integer          | ID de consumo asociado, si aplica                                    |
 | `usuarioId`      | integer          | ID del usuario que registró                                          |
 
-> No existe endpoint para registrar consumos (`CONSUMO`), aunque el tipo está contemplado en el modelo y en reportes.
+---
+
+### 6.5 POST `/api/consumos`
+
+Registra el consumo de uno o varios productos por parte del mecánico. Descuenta el stock de forma atómica: si algún
+ítem falla, no se descuenta nada. Genera un movimiento `CONSUMO` por ítem. El usuario y la fecha se toman del token y
+del reloj del servidor.
+
+- **Acceso:** `JEFE_TALLER`, `MECANICO` (**ADMIN recibe 403**)
+- **Body:**
+
+| Campo                       | Tipo    | Obligatorio | Validación                                                 |
+|-----------------------------|---------|-------------|------------------------------------------------------------|
+| `finalidad`                 | string  | Sí          | No vacía, máximo 255 caracteres                            |
+| `items`                     | lista   | Sí          | Al menos un elemento                                       |
+| `items[].productoId`        | integer | Sí          | `> 0`; producto existente y activo                         |
+| `items[].cantidad`          | integer | Sí          | `> 0`                                                      |
+| `referenciaVehiculoCliente` | string  | No          | Máximo 150 caracteres; si viene en blanco se guarda `null` |
+
+```json
+{
+  "finalidad": "Cambio de aceite",
+  "items": [
+    {
+      "productoId": 12,
+      "cantidad": 2
+    },
+    {
+      "productoId": 15,
+      "cantidad": 1
+    }
+  ],
+  "referenciaVehiculoCliente": "ABC-123"
+}
+```
+
+- **Respuesta 201 Created:**
+
+```json
+{
+  "id": 31,
+  "fecha": "2026-10-31T15:20:00Z",
+  "finalidad": "Cambio de aceite",
+  "referenciaVehiculoCliente": "ABC-123",
+  "usuarioId": 4,
+  "movimientos": [
+    {
+      "id": 102,
+      "fecha": "2026-10-31T15:20:00Z",
+      "tipo": "CONSUMO",
+      "cantidad": 2,
+      "variacion": null,
+      "stockAnterior": 25,
+      "stockPosterior": 23,
+      "costoUnitario": null,
+      "motivo": "Cambio de aceite",
+      "productoId": 12,
+      "consumoId": 31,
+      "usuarioId": 4
+    }
+  ]
+}
+```
+
+- **Errores:**
+    - `400 VALIDATION_ERROR`: campos inválidos, lista vacía, producto inexistente o inactivo
+      (`Producto ID <id> no encontrado o inactivo`).
+    - `401`, `403 FORBIDDEN` (rol `ADMIN`).
+    - `409 STOCK_INSUFICIENTE`:`Stock insuficiente para el producto ID <id> (<nombre>): solicitado <n>, disponible <m>`.
+
+> Si un mismo producto se repite en varios ítems, se suman sus cantidades para validar el stock disponible.
 
 ---
 
-## 8. Dominio: Alertas
+## 7. Dominio: Alertas
 
-### 8.1 GET `/api/alertas`
+### 7.1 GET `/api/alertas`
 
 Lista los productos activos con bajo stock (`stockActual <= stockMinimo`), ordenados por cantidad sugerida descendente y
 luego por nombre.
@@ -596,9 +628,9 @@ luego por nombre.
 
 ---
 
-## 9. Dominio: Dashboard
+## 8. Dominio: Dashboard
 
-### 9.1 GET `/api/dashboard`
+### 8.1 GET `/api/dashboard`
 
 Devuelve el resumen general del inventario, KPIs del mes, alertas y últimos movimientos.
 
@@ -657,24 +689,29 @@ Devuelve el resumen general del inventario, KPIs del mes, alertas y últimos mov
 
 ---
 
-## 10. Dominio: Reportes
+## 9. Dominio: Reportes
 
-### 10.1 GET `/api/reportes/movimientos`
+> Solo `GET /api/reportes/movimientos` está paginado. El resto de reportes (`consumo`, `valor-inventario`, `bajo-stock`) y
+> todas las exportaciones devuelven el resultado completo.
 
-Reporte de movimientos en un rango de fechas, con totales por tipo.
+### 9.1 GET `/api/reportes/movimientos`
 
-- **Acceso:** `JEFE_TALLER`
+Reporte de movimientos en un rango de fechas, con totales por tipo y paginación.
+
+- **Acceso:** `JEFE_TALLER` (**ADMIN y MECANICO reciben 403**)
 - **Parámetros de URL:**
 
-| Parámetro | Tipo                | Obligatorio | Descripción                     |
-|-----------|---------------------|-------------|---------------------------------|
-| `desde`   | date (`yyyy-MM-dd`) | Sí*         | Fecha inicial inclusive         |
-| `hasta`   | date (`yyyy-MM-dd`) | Sí*         | Fecha final inclusive           |
-| `tipo`    | string              | No          | `ENTRADA`, `CONSUMO` o `AJUSTE` |
+| Parámetro | Tipo                | Obligatorio | Descripción                                      |
+|-----------|---------------------|-------------|--------------------------------------------------|
+| `desde`   | date (`yyyy-MM-dd`) | Sí*         | Fecha inicial inclusive                          |
+| `hasta`   | date (`yyyy-MM-dd`) | Sí*         | Fecha final inclusive                            |
+| `tipo`    | string              | No          | `ENTRADA`, `CONSUMO` o `AJUSTE`                  |
+| `page`    | integer             | No          | Número de página, base 0 (se normaliza a `>= 0`) |
+| `size`    | integer             | No          | Tamaño de página (se limita a 1–100)             |
 
 \* En el controlador figuran como opcionales, pero el servicio exige ambos y devuelve `400` si falta alguno.
 
-- **Ejemplo:** `GET /api/reportes/movimientos?desde=2026-10-01&hasta=2026-10-31&tipo=ENTRADA`
+- **Ejemplo:** `GET /api/reportes/movimientos?desde=2026-10-01&hasta=2026-10-31&tipo=ENTRADA&page=0&size=10`
 - **Respuesta 200 OK:**
 
 ```json
@@ -697,19 +734,37 @@ Reporte de movimientos en un rango de fechas, con totales por tipo.
       "consumoId": null,
       "usuarioId": 2
     }
-  ]
+  ],
+  "page": 0,
+  "size": 10,
+  "totalElements": 14,
+  "totalPages": 2
 }
 ```
 
-- **Errores:** `400 VALIDATION_ERROR` (faltan fechas, `hasta < desde`, formato inválido), `401`, `403 FORBIDDEN`.
+| Campo           | Tipo    | Descripción                                 |
+|-----------------|---------|---------------------------------------------|
+| `page`          | integer | Número de la página actual (empieza en `0`) |
+| `size`          | integer | Tamaño de página aplicado                   |
+| `totalElements` | integer | Total de movimientos que cumplen el filtro  |
+| `totalPages`    | integer | Total de páginas                            |
+
+- `size` por defecto es `10`, igual que en `GET /api/productos` (§5.2).
+- Solo se pagina la lista `movimientos`. `totalEntradas`, `totalConsumos` y `totalAjustes` se calculan sobre **todos** los
+  movimientos del filtro, no sobre la página, y no cambian al pasar de página.
+- Orden: `fecha` descendente y luego `id` descendente.
+- Una página fuera de rango devuelve `200 OK` con `movimientos` vacío y `totalElements` y `totalPages` correctos.
+
+- **Errores:** `400 VALIDATION_ERROR` (faltan fechas, `hasta < desde`, formato inválido, `page` o `size` con formato
+  inválido), `401`, `403 FORBIDDEN`.
 
 ---
 
-### 10.2 GET `/api/reportes/valor-inventario`
+### 9.2 GET `/api/reportes/valor-inventario`
 
 Calcula el valor estimado del inventario activo: `stockActual * costoUltimaCompra` por producto.
 
-- **Acceso:** `JEFE_TALLER`
+- **Acceso:** `JEFE_TALLER` (**ADMIN y MECANICO reciben 403**)
 - **Parámetros:** ninguno.
 - **Respuesta 200 OK:**
 
@@ -743,11 +798,11 @@ Los productos sin costo se incluyen en `detalle` con `costoUltimaCompra: null` y
 
 ---
 
-### 10.3 GET `/api/reportes/bajo-stock`
+### 9.3 GET `/api/reportes/bajo-stock`
 
 Lista los productos con bajo stock agrupados por proveedor (orden alfabético).
 
-- **Acceso:** `JEFE_TALLER`
+- **Acceso:** `JEFE_TALLER` (**ADMIN y MECANICO reciben 403**)
 - **Parámetros:** ninguno.
 - **Respuesta 200 OK:**
 
@@ -772,13 +827,84 @@ Lista los productos con bajo stock agrupados por proveedor (orden alfabético).
 
 ---
 
-## 11. Dominio: Estadísticas
+### 9.4 GET `/api/reportes/consumo`
 
-### 11.1 GET `/api/estadisticas`
+Reporte de consumo en un rango de fechas. Toma los movimientos de tipo `CONSUMO` y los agrupa por producto y mecánico,
+ordenados por nombre de producto y luego por mecánico.
+
+- **Acceso:** `JEFE_TALLER` (**ADMIN y MECANICO reciben 403**)
+- **Parámetros de URL:**
+
+| Parámetro | Tipo                | Obligatorio | Descripción             |
+|-----------|---------------------|-------------|-------------------------|
+| `desde`   | date (`yyyy-MM-dd`) | Sí*         | Fecha inicial inclusive |
+| `hasta`   | date (`yyyy-MM-dd`) | Sí*         | Fecha final inclusive   |
+
+\* En el controlador figuran como opcionales, pero el servicio exige ambos y devuelve `400` si falta alguno.
+
+- **Ejemplo:** `GET /api/reportes/consumo?desde=2026-10-01&hasta=2026-10-31`
+- **Respuesta 200 OK:**
+
+```json
+[
+  {
+    "productoId": 12,
+    "productoCodigo": "FIL-001",
+    "productoNombre": "Filtro de aceite",
+    "mecanico": "mecanico1",
+    "finalidades": [
+      "Cambio de aceite"
+    ],
+    "cantidadTotal": 6,
+    "fechas": [
+      "2026-10-05T14:10:00Z",
+      "2026-10-12T16:30:00Z"
+    ]
+  }
+]
+```
+
+- `finalidades` lista las finalidades distintas declaradas; `fechas` contiene el instante de cada movimiento agrupado.
+- **Errores:** `400 VALIDATION_ERROR` (faltan fechas, `hasta < desde`, formato inválido), `401`, `403 FORBIDDEN`.
+
+---
+
+### 9.5 Exportación de reportes (PDF y Excel)
+
+Devuelven el mismo contenido del reporte equivalente como archivo adjunto (`Content-Disposition: attachment`).
+
+- **Acceso:** `JEFE_TALLER` (**ADMIN y MECANICO reciben 403**)
+- **Endpoints:**
+
+| Ruta                                     | Reporte de origen           | Parámetros (además de `formato`) | Nombre del archivo    |
+|------------------------------------------|-----------------------------|----------------------------------|-----------------------|
+| `GET /api/reportes/movimientos/exportar` | `/api/reportes/movimientos` | `desde`, `hasta`, `tipo`         | `reporte-movimientos` |
+| `GET /api/reportes/consumo/exportar`     | `/api/reportes/consumo`     | `desde`, `hasta`                 | `reporte-consumo`     |
+| `GET /api/reportes/bajo-stock/exportar`  | `/api/reportes/bajo-stock`  | —                                | `reporte-bajo-stock`  |
+
+- **Parámetro `formato` (obligatorio):**
+
+| Valor           | Content-Type                                                        | Extensión |
+|-----------------|---------------------------------------------------------------------|-----------|
+| `pdf`           | `application/pdf`                                                   | `.pdf`    |
+| `excel`, `xlsx` | `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` | `.xlsx`   |
+
+El valor de `formato` no distingue mayúsculas. Las reglas de `desde`, `hasta` y `tipo` son las del reporte de origen.
+Las exportaciones no se paginan: ignoran `page` y `size` y exportan el reporte completo.
+
+- **Ejemplo:** `GET /api/reportes/movimientos/exportar?formato=pdf&desde=2026-10-01&hasta=2026-10-31&tipo=ENTRADA`
+- **Respuesta 200 OK:** cuerpo binario del archivo.
+- **Errores:** `400 VALIDATION_ERROR` (`formato` ausente o no válido, fechas inválidas), `401`, `403 FORBIDDEN`.
+
+---
+
+## 10. Dominio: Estadísticas
+
+### 10.1 GET `/api/estadisticas`
 
 Cuenta movimientos en un rango de fechas y los agrupa según la granularidad indicada.
 
-- **Acceso:** `JEFE_TALLER`
+- **Acceso:** `JEFE_TALLER` (**ADMIN y MECANICO reciben 403**)
 - **Parámetros de URL:**
 
 | Parámetro     | Tipo                | Obligatorio | Descripción             |
@@ -790,12 +916,13 @@ Cuenta movimientos en un rango de fechas y los agrupa según la granularidad ind
 \* En el controlador figuran como opcionales, pero el servicio exige los tres y devuelve `400` si falta alguno.
 
 - **Ejemplo:** `GET /api/estadisticas?from=2026-10-01&to=2026-10-31&granularity=DAY`
-- **Respuesta 200 OK:** objeto cuyas claves son fechas y los valores son conteos.
+- **Respuesta 200 OK:** objeto cuyas claves son la fecha de inicio de cada período y los valores son conteos de
+  movimientos. Los períodos sin movimientos se omiten. Con `DAY` la clave es el día; con `WEEK`, el lunes de la semana;
+  con `MONTH`, el día 1 del mes. Los cortes se calculan en la zona horaria `America/Lima`.
 
 ```json
 {
   "2026-10-01": 3,
-  "2026-10-02": 0,
   "2026-10-03": 5
 }
 ```
@@ -804,15 +931,14 @@ Cuenta movimientos en un rango de fechas y los agrupa según la granularidad ind
 
 ---
 
-## 12. Infraestructura
+## 11. Infraestructura
 
-### 12.1 GET `/actuator/health`
+### 11.1 GET `/actuator/health`
 
 - **Acceso:** Público
 - **Respuesta 200 OK:** estado de salud de la aplicación (formato estándar de Spring Boot Actuator).
 
-### 12.2 GET `/actuator/info`
+### 11.2 GET `/actuator/info`
 
-- **Acceso:** `ADMIN` (expuesto por configuración de Actuator)
+- **Acceso:** Público
 - **Respuesta 200 OK:** información de la aplicación, según configuración de Actuator.
-

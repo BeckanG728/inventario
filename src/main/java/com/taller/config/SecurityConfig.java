@@ -70,10 +70,7 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/register")
                         .hasRole("ADMIN")
-                        .requestMatchers(
-                                "/api/productos/guardar",
-                                "/api/categorias/guardar",
-                                "/api/proveedores/guardar")
+                        .requestMatchers(HttpMethod.POST, "/api/categorias", "/api/proveedores")
                         .hasRole("JEFE_TALLER")
                         .requestMatchers(HttpMethod.POST, "/api/productos")
                         .hasRole("JEFE_TALLER")
@@ -83,8 +80,6 @@ public class SecurityConfig {
                         .hasRole("JEFE_TALLER")
                         .requestMatchers(HttpMethod.GET, "/api/dashboard")
                         .hasAnyRole("JEFE_TALLER", "MECANICO")
-                        .requestMatchers(HttpMethod.POST, "/api/vehiculos")
-                        .hasRole("JEFE_TALLER")
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();

@@ -4,6 +4,7 @@ import com.taller.catalogo.entity.Categoria;
 import com.taller.catalogo.entity.Proveedor;
 import com.taller.catalogo.repository.CategoriaRepository;
 import com.taller.catalogo.repository.ProveedorRepository;
+import com.taller.common.exception.DuplicateResourceException;
 import com.taller.movimiento.repository.MovimientoInventarioRepository;
 import com.taller.producto.dto.request.CreateProductoRequest;
 import com.taller.producto.dto.request.UpdateProductoRequest;
@@ -44,7 +45,7 @@ public class ProductoServiceImpl implements ProductoService {
         String codigo = request.codigo().trim();
 
         if (productoRepository.existsByCodigo(codigo)) {
-            throw new IllegalArgumentException("Ya existe un producto con el código: " + codigo);
+            throw new DuplicateResourceException("Ya existe un producto con el código: " + codigo);
         }
 
         Categoria categoria = obtenerCategoriaActiva(request.idCategoria());
@@ -109,11 +110,8 @@ public class ProductoServiceImpl implements ProductoService {
     public ProductoResponse desactivar(Long id) {
         Producto producto = obtenerProducto(id);
 
-        if (movimientoInventarioRepository.existsByProductoId(id)) {
-            throw new IllegalArgumentException(
-                    "No se puede desactivar: el producto tiene movimientos registrados. ");
-        }
-
+        // RN108: la eliminación física no está permitida. La desactivación lógica
+        // conserva el historial de movimientos, por lo que puede aplicarse siempre.
         producto.setActivo(false);
         return productoMapper.toResponse(producto);
     }
@@ -178,7 +176,7 @@ public class ProductoServiceImpl implements ProductoService {
         String codigo = request.codigo().trim();
         if (!codigo.equals(producto.getCodigo())) {
             if (productoRepository.existsByCodigoAndIdNot(codigo, producto.getId())) {
-                throw new IllegalArgumentException("Ya existe un producto con el código: " + codigo);
+                throw new DuplicateResourceException("Ya existe un producto con el código: " + codigo);
             }
             producto.setCodigo(codigo);
         }

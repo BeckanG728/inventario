@@ -1,5 +1,6 @@
 package com.taller.reporte.service.impl;
 
+import com.taller.config.ClockConfig;
 import com.taller.movimiento.dto.response.MovimientoResponse;
 import com.taller.movimiento.entity.MovimientoInventario;
 import com.taller.movimiento.enums.TipoMovimiento;
@@ -30,7 +31,7 @@ public class ReporteMovimientosServiceImpl implements ReporteMovimientosService 
             throw new IllegalArgumentException("La fecha final no puede ser anterior a la inicial");
         }
 
-        ZoneId zone = ZoneId.systemDefault();
+        ZoneId zone = ClockConfig.ZONA_NEGOCIO;
         Instant start = desde.atStartOfDay(zone).toInstant();
         Instant endExclusive = hasta.plusDays(1).atStartOfDay(zone).toInstant(); // 'hasta' inclusive
 
