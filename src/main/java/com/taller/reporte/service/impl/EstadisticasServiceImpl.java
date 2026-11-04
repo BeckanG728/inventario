@@ -1,12 +1,12 @@
 package com.taller.reporte.service.impl;
 
+import com.taller.config.ClockConfig;
 import com.taller.reporte.enums.Granularity;
 import com.taller.reporte.repository.MovimientoReporteRepository;
 import com.taller.reporte.service.EstadisticasBucketing;
 import com.taller.reporte.service.EstadisticasService;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -31,8 +31,8 @@ public class EstadisticasServiceImpl implements EstadisticasService {
         if (to.isBefore(from)) {
             throw new IllegalArgumentException("La fecha final no puede ser anterior a la inicial");
         }
-        Instant start = from.atStartOfDay(ZoneOffset.UTC).toInstant();
-        Instant endExclusive = to.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant(); // 'to' inclusive
+        Instant start = from.atStartOfDay(ClockConfig.ZONA_NEGOCIO).toInstant();
+        Instant endExclusive = to.plusDays(1).atStartOfDay(ClockConfig.ZONA_NEGOCIO).toInstant(); // 'to' inclusive
         List<Instant> fechas = repository.findFechasBetween(start, endExclusive);
         return EstadisticasBucketing.agrupar(fechas, granularity);
     }

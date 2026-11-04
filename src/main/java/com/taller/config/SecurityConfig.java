@@ -66,14 +66,11 @@ public class SecurityConfig {
                                 errorResponseWriter.write(request, response, HttpStatus.FORBIDDEN,
                                         "FORBIDDEN", "No tiene permisos para realizar esta acción")))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/login", "/actuator/health", "/error")
+                        .requestMatchers("/api/auth/login", "/actuator/health", "/actuator/info", "/error")
                         .permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/register")
                         .hasRole("ADMIN")
-                        .requestMatchers(
-                                "/api/productos/guardar",
-                                "/api/categorias/guardar",
-                                "/api/proveedores/guardar")
+                        .requestMatchers(HttpMethod.POST, "/api/categorias", "/api/proveedores")
                         .hasRole("JEFE_TALLER")
                         .requestMatchers(HttpMethod.POST, "/api/productos")
                         .hasRole("JEFE_TALLER")
@@ -81,9 +78,9 @@ public class SecurityConfig {
                         .hasRole("JEFE_TALLER")
                         .requestMatchers(HttpMethod.PATCH, "/api/productos/**")
                         .hasRole("JEFE_TALLER")
-                        .requestMatchers(HttpMethod.GET, "/api/dashboard")
+                        .requestMatchers(HttpMethod.GET, "/api/productos", "/api/existencias", "/api/alertas")
                         .hasAnyRole("JEFE_TALLER", "MECANICO")
-                        .requestMatchers(HttpMethod.POST, "/api/vehiculos")
+                        .requestMatchers(HttpMethod.GET, "/api/dashboard", "/api/reportes/**", "/api/estadisticas")
                         .hasRole("JEFE_TALLER")
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

@@ -9,12 +9,12 @@ import com.lowagie.text.Phrase;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
+import com.taller.config.ClockConfig;
 import org.springframework.stereotype.Component;
 
 import java.awt.Color;
 import java.io.ByteArrayOutputStream;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -48,7 +48,7 @@ public class ReportePdfExporter {
             }
 
             String generado = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
-                    .withZone(ZoneId.systemDefault())
+                    .withZone(ClockConfig.ZONA_NEGOCIO)
                     .format(Instant.now());
             Paragraph fecha = new Paragraph("Generado: " + generado, SUBTITULO);
             fecha.setSpacingAfter(10);

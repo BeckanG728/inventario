@@ -2,6 +2,7 @@ package com.taller.alerta.scheduler;
 
 import com.taller.alerta.dto.response.AlertaStock;
 import com.taller.alerta.service.AlertaService;
+import com.taller.config.ClockConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -16,7 +17,7 @@ public class AlertaScheduler {
 
     private final AlertaService alertaService;
 
-    @Scheduled(cron = "${alertas.cron}")
+    @Scheduled(cron = "${alertas.cron}", zone = ClockConfig.ZONA_NEGOCIO_ID)
     public void revisarStock() {
         List<AlertaStock> alertas = alertaService.generarAlertas();
         log.info(alertaService.resumir(alertas));

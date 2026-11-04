@@ -31,20 +31,6 @@ public class CategoriaServiceImpl implements CategoriaService {
         return CategoriaResponse.from(saved);
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public Categoria obtenerActiva(Long id) {
-        if (id == null) {
-            throw new IllegalArgumentException("La categoría es obligatoria");
-        }
-        Categoria categoria = repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Categoría no encontrada"));
-        if (!categoria.isActivo()) {
-            throw new IllegalArgumentException("Categoría inactiva");
-        }
-        return categoria;
-    }
-
     private static String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
     }

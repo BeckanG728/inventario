@@ -1,7 +1,7 @@
 package com.taller.reporte.controller;
 
 import com.taller.movimiento.enums.TipoMovimiento;
-import com.taller.reporte.dto.response.ReporteMovimientosResponse;
+import com.taller.reporte.dto.response.ReporteMovimientosPaginaResponse;
 import com.taller.reporte.service.ReporteMovimientosService;
 import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
@@ -19,10 +19,12 @@ public class ReporteMovimientosController {
     private final ReporteMovimientosService reporteMovimientosService;
 
     @GetMapping("/movimientos")
-    public ReporteMovimientosResponse movimientos(
+    public ReporteMovimientosPaginaResponse movimientos(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
-            @RequestParam(required = false) TipoMovimiento tipo) {
-        return reporteMovimientosService.consultar(desde, hasta, tipo);
+            @RequestParam(required = false) TipoMovimiento tipo,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return reporteMovimientosService.consultarPagina(desde, hasta, tipo, page, size);
     }
 }

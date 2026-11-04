@@ -1,5 +1,6 @@
 package com.taller.reporte.export;
 
+import com.taller.config.ClockConfig;
 import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -15,7 +16,6 @@ import org.springframework.stereotype.Component;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -50,7 +50,7 @@ public class ReporteExcelExporter {
             }
 
             String generado = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
-                    .withZone(ZoneId.systemDefault())
+                    .withZone(ClockConfig.ZONA_NEGOCIO)
                     .format(Instant.now());
             Row filaFecha = sheet.createRow(filaActual++);
             Cell celdaFecha = filaFecha.createCell(0);
