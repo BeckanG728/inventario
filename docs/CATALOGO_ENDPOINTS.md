@@ -3,6 +3,10 @@
 Documento generado a partir del código actual: controladores, DTOs, `SecurityConfig`, anotaciones `@PreAuthorize` y
 `GlobalExceptionHandler`.
 
+Documentos relacionados: [REGLAS_DE_NEGOCIO.md](REGLAS_DE_NEGOCIO.md), [VALIDACIONES.md](VALIDACIONES.md),
+[POLITICAS_DE_SEGURIDAD.md](POLITICAS_DE_SEGURIDAD.md), [CONFIGURACION_TECNICA.md](CONFIGURACION_TECNICA.md),
+y [REQUISITOS_FUNCIONALES.md](REQUISITOS_FUNCIONALES.md).
+
 - **Prefijo global:** `/api`
 - **Base URL:** `http://<host>:${SERVER_PORT}`
 - **Formato:** `application/json`
@@ -426,6 +430,8 @@ Consulta el stock de uno o varios productos activos.
 - **Errores:** `400 VALIDATION_ERROR` (sin `ids`, producto inactivo), `401`, `403 FORBIDDEN`, `404 NOT_FOUND` (algún ID
   no existe).
 
+> Los identificadores repetidos en `ids` se ignoran: cada producto se consulta una sola vez (RN212).
+
 ---
 
 ### 6.2 POST `/api/movimientos/entrada`
@@ -524,6 +530,12 @@ Registra un ajuste de inventario fijando la cantidad física real. No modifica e
 | `consumoId`      | integer          | ID de consumo asociado, si aplica                                    |
 | `usuarioId`      | integer          | ID del usuario que registró                                          |
 
+Semántica de `cantidad` y `variacion` según el tipo (RN210):
+
+- `ENTRADA`: `cantidad` y `variacion` contienen las unidades ingresadas (mismo valor).
+- `CONSUMO`: `cantidad` contiene las unidades descontadas y `variacion` es `null`.
+- `AJUSTE`: `cantidad` es `null` y `variacion` contiene la diferencia con signo respecto al stock anterior.
+
 ---
 
 ### 6.5 POST `/api/consumos`
@@ -594,7 +606,8 @@ del reloj del servidor.
     - `401`, `403 FORBIDDEN` (rol `ADMIN`).
     - `409 STOCK_INSUFICIENTE`:`Stock insuficiente para el producto ID <id> (<nombre>): solicitado <n>, disponible <m>`.
 
-> Si un mismo producto se repite en varios ítems, se suman sus cantidades para validar el stock disponible.
+> Si un mismo producto se repite en varios ítems, se suman sus cantidades para validar el stock disponible. Si esa
+> suma desborda el máximo entero admitido, la petición se rechaza con `400 VALIDATION_ERROR` (RN211).
 
 ---
 
@@ -942,3 +955,32 @@ Cuenta movimientos en un rango de fechas y los agrupa según la granularidad ind
 
 - **Acceso:** Público
 - **Respuesta 200 OK:** información de la aplicación, según configuración de Actuator.
+
+---
+
+## 12. Trazabilidad de reglas migradas
+
+Este catálogo conserva las especificaciones de API que antes formaban parte del catálogo de reglas de negocio. La
+tabla siguiente permite localizar su origen documental; no modifica los contratos descritos en las secciones
+anteriores. Los identificadores `RN` marcados con un código original (`M100-`, `M200-`, `M400-`) se asignaron en la
+reclasificación.
+
+| Regla (ID original) | Contenido conservado en este catálogo | Sección |
+|---------------------|----------------------------------------|---------|
+| RN119 (M100-03) | Paginación, filtros, orden e inclusión de productos inactivos | §5.2 |
+| RN210 (M200-01) | Semántica de `cantidad` y `variacion` por tipo de movimiento | §6.4 |
+| RN211 (M200-02) | Desbordamiento al sumar cantidades repetidas en un consumo | §6.5 |
+| RN212 (M200-03) | Consulta de existencias por `ids`, duplicados, inexistentes e inactivos | §6.1 |
+| RN303 | Contenido mínimo de la alerta de bajo stock | §7.1 |
+| RN404 | Contenido, agrupación y orden del reporte de consumo | §9.4 |
+| RN405 | Parámetros y validación de rangos de fechas y granularidad | §9.1, §9.4, §10.1 |
+| RN409 (M400-01) | Cortes de fecha en `America/Lima` y respuestas en UTC | §9.1, §9.4, §10.1 |
+| RN410 (M400-02) | Omisión de períodos sin movimientos y claves de período | §10.1 |
+| RN411 (M400-03) | Agrupación por proveedor en orden alfabético | §9.3 |
+| RN412 (M400-04) | Formatos de exportación y entrega como archivo adjunto | §9.5 |
+| RN413 (M400-05) | Contenido del dashboard | §8.1 |
+| RN414 (M400-07) | Paginación, orden y totales del reporte de movimientos | §9.1 |
+
+Los detalles de validación se documentan en [VALIDACIONES.md](VALIDACIONES.md); las reglas de negocio en
+[REGLAS_DE_NEGOCIO.md](REGLAS_DE_NEGOCIO.md); y los requisitos funcionales en
+[REQUISITOS_FUNCIONALES.md](REQUISITOS_FUNCIONALES.md).

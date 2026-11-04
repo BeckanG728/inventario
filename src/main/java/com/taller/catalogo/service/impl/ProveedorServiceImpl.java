@@ -37,20 +37,6 @@ public class ProveedorServiceImpl implements ProveedorService {
         return ProveedorResponse.from(saved);
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public Proveedor obtenerActivo(Long id) {
-        if (id == null) {
-            throw new IllegalArgumentException("El proveedor es obligatorio");
-        }
-        Proveedor proveedor = repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Proveedor no encontrado"));
-        if (!proveedor.isActivo()) {
-            throw new IllegalArgumentException("Proveedor inactivo");
-        }
-        return proveedor;
-    }
-
     private static String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
     }

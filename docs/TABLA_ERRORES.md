@@ -45,7 +45,7 @@ Todos los errores controlados (excepciones de dominio, validación y seguridad) 
 | 401  | `TOKEN_EXPIRED`            | `JwtAuthFilter` (`ExpiredJwtException`)                                     | Token expirado                                                                   |
 | 401  | `TOKEN_INVALID`            | `JwtAuthFilter` (`JwtException`, `IllegalArgumentException`, usuario no encontrado) | Token malformado, firma inválida o usuario del `sub` inexistente         |
 | 401  | `ACCOUNT_DISABLED`         | `JwtAuthFilter` (`usuario.isEnabled() == false`)                            | Usuario inactivo con token válido                                                |
-| 403  | `FORBIDDEN`                | `accessDeniedHandler` de `SecurityConfig`                                   | Rol sin permiso (regla de `SecurityConfig` o `@PreAuthorize`)                    |
+| 403  | `FORBIDDEN`                | `accessDeniedHandler` de `SecurityConfig`                                   | Rol sin permiso: regla de `SecurityConfig` (incluye `ADMIN` en endpoints de consulta y `MECANICO` en dashboard/reportes) o `@PreAuthorize` |
 | 404  | `NOT_FOUND`                | `ProductoNotFoundException`                                                 | Producto inexistente (o inactivo, en operaciones que exigen producto activo)     |
 | 404  | `NOT_FOUND`                | `NoResourceFoundException`                                                  | Ruta inexistente (con token válido; sin token responde 401)                      |
 | 409  | `USER_ALREADY_EXISTS`      | `UserAlreadyExistsException`                                                | Username ya registrado                                                           |
@@ -70,7 +70,7 @@ Notas:
 ## 3. Producto, categoría y proveedor: cuándo es 400, 404 o 409
 
 La misma situación se reporta distinto según el endpoint. Esta tabla coincide con `CATALOGO_ENDPOINTS.md` y con
-`CATALOGO_REGLAS_NEGOCIO.md` (RN101, RN102, RN105, RN202, RN206, RN209, M200-03).
+`REGLAS_DE_NEGOCIO.md`, `VALIDACIONES.md` (RN101, RN102, RN105, RN202, RN206, RN209, RN212).
 
 | Situación                                        | Endpoint                                                                                                  | Respuesta                 |
 |--------------------------------------------------|-----------------------------------------------------------------------------------------------------------|---------------------------|

@@ -1,5 +1,6 @@
 package com.taller.producto.controller;
 
+import com.taller.common.dto.PaginaResponse;
 import com.taller.producto.dto.request.CreateProductoRequest;
 import com.taller.producto.dto.request.StockMinimoRequest;
 import com.taller.producto.dto.request.UpdateProductoRequest;
@@ -7,7 +8,6 @@ import com.taller.producto.dto.response.ProductoResponse;
 import com.taller.producto.service.ProductoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import com.taller.producto.dto.request.StockMinimoRequest;
 
 @RestController
 @RequestMapping("/api/productos")
@@ -34,12 +33,12 @@ public class ProductoController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<ProductoResponse>> listar(
+    public ResponseEntity<PaginaResponse<ProductoResponse>> listar(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String nombre,
             @RequestParam(required = false) Long categoria) {
-        return ResponseEntity.ok(productoService.listar(page, size, nombre, categoria));
+        return ResponseEntity.ok(PaginaResponse.from(productoService.listar(page, size, nombre, categoria)));
     }
 
     @PutMapping("/{id}")
