@@ -36,5 +36,20 @@ admin:
   username: ${ADMIN_USERNAME}
   password: ${ADMIN_PASSWORD}
 
+seed:
+  demo:
+    enabled: ${SEED_DEMO_ENABLED}
+    categorias: ${SEED_DEMO_CATEGORIAS}
+    proveedores: ${SEED_DEMO_PROVEEDORES}
+    productos: ${SEED_DEMO_PRODUCTOS}
+    entradas: ${SEED_DEMO_ENTRADAS}
+    consumos: ${SEED_DEMO_CONSUMOS}
+    ajustes: ${SEED_DEMO_AJUSTES}
+    semilla: ${SEED_DEMO_SEMILLA}
+    password: ${SEED_DEMO_PASSWORD}
+    usuarios:
+      jefe: ${SEED_DEMO_JEFE}
+      mecanicos: ${SEED_DEMO_MECANICOS}
+
 alertas:
   cron: ${ALERTAS_CRON}
