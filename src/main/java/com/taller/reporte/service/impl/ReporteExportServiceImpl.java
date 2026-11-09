@@ -1,6 +1,6 @@
 package com.taller.reporte.service.impl;
 
-import com.taller.movimiento.dto.response.MovimientoResponse;
+import com.taller.inventario.movimiento.dto.response.MovimientoResponse;
 import com.taller.reporte.dto.response.ProductoBajoStock;
 import com.taller.reporte.dto.response.ProveedorBajoStock;
 import com.taller.reporte.dto.response.ReporteConsumoItem;

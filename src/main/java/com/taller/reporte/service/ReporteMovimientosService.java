@@ -1,6 +1,6 @@
 package com.taller.reporte.service;
 
-import com.taller.movimiento.enums.TipoMovimiento;
+import com.taller.inventario.movimiento.enums.TipoMovimiento;
 import com.taller.reporte.dto.response.ReporteMovimientosResponse;
 import com.taller.reporte.dto.response.ReporteMovimientosPaginaResponse;
 import java.time.LocalDate;
