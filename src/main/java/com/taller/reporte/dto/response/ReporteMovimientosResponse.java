@@ -1,6 +1,6 @@
 package com.taller.reporte.dto.response;
 
-import com.taller.movimiento.dto.response.MovimientoResponse;
+import com.taller.inventario.movimiento.dto.response.MovimientoResponse;
 import java.util.List;
 
 public record ReporteMovimientosResponse(

@@ -1,11 +1,11 @@
 package com.taller.producto.service.impl;
 
-import com.taller.catalogo.entity.Categoria;
-import com.taller.catalogo.entity.Proveedor;
-import com.taller.catalogo.repository.CategoriaRepository;
-import com.taller.catalogo.repository.ProveedorRepository;
+import com.taller.catalogo.categoria.entity.Categoria;
+import com.taller.catalogo.proveedor.entity.Proveedor;
+import com.taller.catalogo.categoria.repository.CategoriaRepository;
+import com.taller.catalogo.proveedor.repository.ProveedorRepository;
 import com.taller.common.exception.DuplicateResourceException;
-import com.taller.movimiento.repository.MovimientoInventarioRepository;
+import com.taller.inventario.movimiento.repository.MovimientoInventarioRepository;
 import com.taller.producto.dto.request.CreateProductoRequest;
 import com.taller.producto.dto.request.UpdateProductoRequest;
 import com.taller.producto.dto.response.ProductoResponse;

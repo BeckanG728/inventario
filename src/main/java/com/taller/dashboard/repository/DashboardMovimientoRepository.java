@@ -1,7 +1,7 @@
 package com.taller.dashboard.repository;
 
-import com.taller.movimiento.entity.MovimientoInventario;
-import com.taller.movimiento.enums.TipoMovimiento;
+import com.taller.inventario.movimiento.entity.MovimientoInventario;
+import com.taller.inventario.movimiento.enums.TipoMovimiento;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.repository.Repository;
 

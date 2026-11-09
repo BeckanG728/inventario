@@ -1,7 +1,7 @@
 package com.taller.dashboard.dto.response;
 
 import com.taller.alerta.dto.response.AlertaStock;
-import com.taller.movimiento.enums.TipoMovimiento;
+import com.taller.inventario.movimiento.enums.TipoMovimiento;
 
 import java.math.BigDecimal;
 import java.time.Instant;

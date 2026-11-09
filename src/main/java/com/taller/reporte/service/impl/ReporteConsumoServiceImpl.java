@@ -1,8 +1,8 @@
 package com.taller.reporte.service.impl;
 
 import com.taller.config.ClockConfig;
-import com.taller.movimiento.entity.MovimientoInventario;
-import com.taller.movimiento.enums.TipoMovimiento;
+import com.taller.inventario.movimiento.entity.MovimientoInventario;
+import com.taller.inventario.movimiento.enums.TipoMovimiento;
 import com.taller.producto.entity.Producto;
 import com.taller.reporte.dto.response.ReporteConsumoItem;
 import com.taller.reporte.repository.MovimientoReporteRepository;

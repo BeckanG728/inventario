@@ -1,7 +1,7 @@
 package com.taller.reporte.repository;
 
-import com.taller.movimiento.entity.MovimientoInventario;
-import com.taller.movimiento.enums.TipoMovimiento;
+import com.taller.inventario.movimiento.entity.MovimientoInventario;
+import com.taller.inventario.movimiento.enums.TipoMovimiento;
 import java.time.Instant;
 import java.util.List;
 import org.springframework.data.domain.Page;

@@ -1,7 +1,7 @@
 package com.taller.producto.entity;
 
-import com.taller.catalogo.entity.Categoria;
-import com.taller.catalogo.entity.Proveedor;
+import com.taller.catalogo.categoria.entity.Categoria;
+import com.taller.catalogo.proveedor.entity.Proveedor;
 import com.taller.common.exception.StockInsuficienteException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
