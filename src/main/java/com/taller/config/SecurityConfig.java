@@ -5,6 +5,11 @@ import com.taller.auth.security.JwtAuthFilter;
 import com.taller.auth.security.JwtUtil;
 import com.taller.auth.security.TokenAuthenticationEntryPoint;
 import com.taller.auth.service.UsuarioDetailsService;
+import com.taller.ratelimit.config.RateLimitProperties;
+import com.taller.ratelimit.filter.LoginRateLimitFilter;
+import com.taller.ratelimit.filter.UsuarioRateLimitFilter;
+import com.taller.ratelimit.store.RateLimitStore;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -23,6 +28,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import tools.jackson.databind.ObjectMapper;
 
 @Configuration
 @EnableWebSecurity
@@ -48,7 +54,26 @@ public class SecurityConfig {
     }
 
     @Bean
+    public LoginRateLimitFilter loginRateLimitFilter(RateLimitStore store,
+                                                    RateLimitProperties properties,
+                                                    ErrorResponseWriter errorResponseWriter,
+                                                    ApplicationEventPublisher publisher,
+                                                    ObjectMapper objectMapper) {
+        return new LoginRateLimitFilter(store, properties, errorResponseWriter, publisher, objectMapper);
+    }
+
+    @Bean
+    public UsuarioRateLimitFilter usuarioRateLimitFilter(RateLimitStore store,
+                                                        RateLimitProperties properties,
+                                                        ErrorResponseWriter errorResponseWriter,
+                                                        ApplicationEventPublisher publisher) {
+        return new UsuarioRateLimitFilter(store, properties, errorResponseWriter, publisher);
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                   LoginRateLimitFilter loginRateLimitFilter,
+                                                   UsuarioRateLimitFilter usuarioRateLimitFilter,
                                                    JwtUtil jwtUtil,
                                                    UsuarioDetailsService usuarioDetailsService,
                                                    TokenAuthenticationEntryPoint authenticationEntryPoint,
@@ -87,7 +112,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/dashboard", "/api/reportes/**", "/api/estadisticas")
                         .hasRole("JEFE_TALLER")
                         .anyRequest().authenticated())
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(loginRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(usuarioRateLimitFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 }

@@ -53,3 +53,11 @@ seed:
 
 alertas:
   cron: ${ALERTAS_CRON}
+
+rate-limit:
+  login-ip: ${RATE_LIMIT_LOGIN_IP}
+  login-username: ${RATE_LIMIT_LOGIN_USERNAME}
+  usuario: ${RATE_LIMIT_USUARIO}
+  swagger: ${RATE_LIMIT_SWAGGER}
+  ventana-login-segundos: ${RATE_LIMIT_VENTANA_LOGIN_SEGUNDOS}
+  ventana-usuario-segundos: ${RATE_LIMIT_VENTANA_USUARIO_SEGUNDOS}
