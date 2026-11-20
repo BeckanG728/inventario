@@ -43,7 +43,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         EstadisticasController.class
 })
 @Import({SecurityConfig.class, ErrorResponseWriter.class, TokenAuthenticationEntryPoint.class,
-        RateLimitProperties.class, InMemoryRateLimitStore.class})
+        RateLimitProperties.class, InMemoryRateLimitStore.class,
+        ErrorCatalogTestConfig.class})
 @TestPropertySource(properties = {
         "SERVER_PORT=8080",
         "JWT_SECRET=test-secret-at-least-32-characters-long!!",

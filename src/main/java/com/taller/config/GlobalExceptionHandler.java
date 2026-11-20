@@ -1,145 +1,27 @@
 package com.taller.config;
 
-import com.taller.auth.exception.InvalidCredentialsException;
-import com.taller.auth.exception.InvalidRoleException;
-import com.taller.auth.exception.UltimoAdminActivoException;
-import com.taller.auth.exception.UserAlreadyExistsException;
-import com.taller.auth.exception.UsuarioNotFoundException;
-import com.taller.common.exception.StockInsuficienteException;
-import com.taller.producto.exception.ProductoNotFoundException;
+import com.taller.common.error.ErrorDefinition;
+import com.taller.common.error.ErrorPolicyResolver;
+import com.taller.common.error.ErrorResponseFactory;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.HttpStatus;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-import com.taller.common.exception.DuplicateResourceException;
-import org.springframework.web.HttpMediaTypeNotSupportedException;
-import org.springframework.web.HttpRequestMethodNotSupportedException;
-import org.springframework.web.servlet.resource.NoResourceFoundException;
-
-import java.time.Instant;
-import java.util.List;
 
 @RestControllerAdvice
+@RequiredArgsConstructor
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(UserAlreadyExistsException.class)
-    public ResponseEntity<ErrorResponse> handleUserAlreadyExists(UserAlreadyExistsException ex,
-                                                                 HttpServletRequest req) {
-        return error(HttpStatus.CONFLICT, "USER_ALREADY_EXISTS",
-                "Ya existe un usuario con ese username", req);
-    }
+    private final ErrorPolicyResolver errorPolicyResolver;
+    private final ErrorResponseFactory errorResponseFactory;
 
-    @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex,
-                                                             HttpServletRequest req) {
-        return error(HttpStatus.CONFLICT, "DATA_INTEGRITY_VIOLATION",
-                "La operación viola una restricción de integridad de datos", req);
-    }
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handle(Exception ex, HttpServletRequest request) {
+        ErrorDefinition definition = errorPolicyResolver.resolveMvc(ex);
 
-    @ExceptionHandler(InvalidCredentialsException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidCredentials(InvalidCredentialsException ex,
-                                                                  HttpServletRequest req) {
-        return error(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS",
-                "Usuario o contraseña incorrectos", req);
-    }
-
-    @ExceptionHandler(InvalidRoleException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidRole(InvalidRoleException ex, HttpServletRequest req) {
-        return error(HttpStatus.BAD_REQUEST, "INVALID_ROLE", ex.getMessage(), req);
-    }
-
-    @ExceptionHandler(ProductoNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleProductoNotFound(ProductoNotFoundException ex,
-                                                                HttpServletRequest req) {
-        return error(HttpStatus.NOT_FOUND, "NOT_FOUND", ex.getMessage(), req);
-    }
-
-    @ExceptionHandler(UsuarioNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleUsuarioNotFound(UsuarioNotFoundException ex,
-                                                               HttpServletRequest req) {
-        return error(HttpStatus.NOT_FOUND, "NOT_FOUND", ex.getMessage(), req);
-    }
-
-    @ExceptionHandler(UltimoAdminActivoException.class)
-    public ResponseEntity<ErrorResponse> handleUltimoAdminActivo(UltimoAdminActivoException ex,
-                                                                 HttpServletRequest req) {
-        return error(HttpStatus.CONFLICT, "ULTIMO_ADMIN_ACTIVO", ex.getMessage(), req);
-    }
-
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleBeanValidation(MethodArgumentNotValidException ex,
-                                                              HttpServletRequest req) {
-        List<ErrorResponse.FieldDetail> details = ex.getBindingResult().getFieldErrors().stream()
-                .map(e -> new ErrorResponse.FieldDetail(e.getField(), e.getDefaultMessage()))
-                .toList();
-        return ResponseEntity.badRequest().body(new ErrorResponse(
-                "VALIDATION_ERROR", "La petición contiene campos no válidos",
-                details, req.getRequestURI(), Instant.now()));
-    }
-
-    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex,
-                                                            HttpServletRequest req) {
-        List<ErrorResponse.FieldDetail> details = List.of(
-                new ErrorResponse.FieldDetail(ex.getName(), "Formato no válido"));
-        return ResponseEntity.badRequest().body(new ErrorResponse(
-                "VALIDATION_ERROR", "El parámetro '" + ex.getName() + "' no tiene un formato válido",
-                details, req.getRequestURI(), Instant.now()));
-    }
-
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ErrorResponse> handleUnreadable(HttpMessageNotReadableException ex, HttpServletRequest req) {
-        return error(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR",
-                "La petición contiene un cuerpo JSON no válido", req);
-    }
-
-    @ExceptionHandler(StockInsuficienteException.class)
-    public ResponseEntity<ErrorResponse> handleStockInsuficiente(StockInsuficienteException ex,
-                                                                 HttpServletRequest req) {
-        return error(HttpStatus.CONFLICT, "STOCK_INSUFICIENTE", ex.getMessage(), req);
-    }
-
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex, HttpServletRequest req) {
-        return error(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", ex.getMessage(), req);
-    }
-
-    private ResponseEntity<ErrorResponse> error(HttpStatus status, String code, String message,
-                                                HttpServletRequest req) {
-        return ResponseEntity.status(status).body(ErrorResponse.of(code, message, req.getRequestURI()));
-    }
-
-    @ExceptionHandler(DuplicateResourceException.class)
-    public ResponseEntity<ErrorResponse> handleDuplicate(
-            DuplicateResourceException ex, HttpServletRequest req) {
-        return error(HttpStatus.CONFLICT, "DUPLICATE_RESOURCE", ex.getMessage(), req);
-    }
-
-    @ExceptionHandler(NoResourceFoundException.class)
-    public ResponseEntity<ErrorResponse> handleNoResource(NoResourceFoundException ex, HttpServletRequest req) {
-        return error(HttpStatus.NOT_FOUND, "NOT_FOUND", "El recurso solicitado no existe", req);
-    }
-
-    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
-    public ResponseEntity<ErrorResponse> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex,
-                                                                  HttpServletRequest req) {
-        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
-                .headers(ex.getHeaders())
-                .body(ErrorResponse.of("METHOD_NOT_ALLOWED",
-                        "El método HTTP no está soportado para este endpoint", req.getRequestURI()));
-    }
-
-    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
-    public ResponseEntity<ErrorResponse> handleMediaTypeNotSupported(HttpMediaTypeNotSupportedException ex,
-                                                                     HttpServletRequest req) {
-        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
-                .headers(ex.getHeaders())
-                .body(ErrorResponse.of("UNSUPPORTED_MEDIA_TYPE",
-                        "El tipo de contenido no está soportado; se espera application/json", req.getRequestURI()));
+        return ResponseEntity.status(definition.status())
+                .headers(definition.headers())
+                .body(errorResponseFactory.crear(definition, request.getRequestURI()));
     }
 }

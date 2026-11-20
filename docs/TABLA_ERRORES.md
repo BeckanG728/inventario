@@ -1,7 +1,8 @@
 # Tabla de errores — Sistema de Gestión de Inventario (Taller Mecánico)
 
-Documento generado a partir del código actual: `GlobalExceptionHandler`, `TokenAuthenticationEntryPoint`,
-`JwtAuthFilter`, `LoginRateLimitFilter`, `UsuarioRateLimitFilter`, `SecurityConfig` y los servicios de cada módulo.
+Documento generado a partir del catálogo único `ErrorCode` y las políticas en `common/error`, que consumen
+`GlobalExceptionHandler`, `ErrorResponseWriter`, `TokenAuthenticationEntryPoint`, `JwtAuthFilter`,
+`LoginRateLimitFilter`, `UsuarioRateLimitFilter`, `SecurityConfig` y `AuditoriaResultadoResolver`.
 
 ## 1. Contrato de error
 
@@ -22,14 +23,12 @@ Todos los errores controlados (excepciones de dominio, validación y seguridad) 
 }
 ```
 
-- `details` solo aparece en errores de Bean Validation y de tipo de parámetro (`MethodArgumentNotValidException`,
-  `MethodArgumentTypeMismatchException`).
-- `endpoint` contiene la URI de la petición; `timestamp` es un `Instant` en UTC.
-- Solo las excepciones con manejador en `GlobalExceptionHandler` (y los errores de seguridad) usan este contrato. Esto
-  incluye ruta inexistente (404), método no soportado (405) y tipo de contenido no soportado (415). No hay un manejador
-  genérico de `Exception`: capturaría también `AccessDeniedException` de `@PreAuthorize` y convertiría los 403 en 500. Por
-  eso, cualquier otro error inesperado termina en HTTP 500 con el formato por defecto de Spring. Para que otra excepción
-  de Spring MVC use el contrato, hay que añadirle un manejador explícito.
+- `details` aparece en errores de Bean Validation, tipo de parámetro y parámetro obligatorio ausente
+  (`MethodArgumentNotValidException`, `MethodArgumentTypeMismatchException`, `MissingServletRequestParameterException`).
+- `endpoint` contiene la URI de la petición; `timestamp` es un `Instant` en UTC generado con el `Clock` de la aplicación.
+- `ErrorCode` es la fuente de verdad de estado, código y mensaje por defecto. Cada módulo aporta una `ErrorPolicy` y
+  `ErrorPolicyResolver` las aplica en orden; si ninguna reconoce la excepción, se responde `500 INTERNAL_ERROR` con este
+  mismo contrato. Los errores de seguridad (401 y 403) y la auditoría consultan el mismo catálogo.
 
 ## 2. Códigos de error
 
@@ -38,6 +37,7 @@ Todos los errores controlados (excepciones de dominio, validación y seguridad) 
 | 400  | `VALIDATION_ERROR`         | `MethodArgumentNotValidException`                                           | Falla una anotación de Bean Validation en el body (incluye `details` por campo)  |
 | 400  | `VALIDATION_ERROR`         | `MethodArgumentTypeMismatchException`                                       | Parámetro de URL o path con formato inválido (fecha, número, enum `tipo`/`granularity`) |
 | 400  | `VALIDATION_ERROR`         | `HttpMessageNotReadableException`                                           | Body JSON malformado o ilegible                                                  |
+| 400  | `VALIDATION_ERROR`         | `MissingServletRequestParameterException`                                   | Falta un parámetro obligatorio de consulta (incluye `details`)                    |
 | 400  | `VALIDATION_ERROR`         | `IllegalArgumentException`                                                  | Regla de negocio incumplida en un servicio                                       |
 | 400  | `INVALID_ROLE`             | `InvalidRoleException`                                                      | Rol inexistente o intento de registrar `ADMIN`                                   |
 | 401  | `INVALID_CREDENTIALS`      | `InvalidCredentialsException`                                               | Usuario o contraseña incorrectos en `/api/auth/login`                            |
@@ -57,7 +57,7 @@ Todos los errores controlados (excepciones de dominio, validación y seguridad) 
 | 405  | `METHOD_NOT_ALLOWED`       | `HttpRequestMethodNotSupportedException`                                    | Método HTTP no soportado para la ruta (incluye cabecera `Allow`)                 |
 | 415  | `UNSUPPORTED_MEDIA_TYPE`   | `HttpMediaTypeNotSupportedException`                                        | `Content-Type` no soportado en un endpoint con body (incluye cabecera `Accept`)  |
 | 429  | `RATE_LIMIT_EXCEEDED`      | `LoginRateLimitFilter` / `UsuarioRateLimitFilter`                           | Se superó el límite de login por IP o username, o el límite de peticiones por usuario. Incluye `Retry-After` en segundos |
-| 500  | —                          | Cualquier otra excepción                                                    | Error interno no previsto (sin contrato propio)                                  |
+| 500  | `INTERNAL_ERROR`           | Cualquier otra excepción                                                    | Error interno no previsto (fallback del catálogo)                                |
 
 Notas:
 
@@ -69,6 +69,9 @@ Notas:
   El 429 incluye la cabecera `Retry-After` con los segundos que faltan para que se renueve la ventana.
 - Los rechazos por limitación se publican como eventos de seguridad y se registran en el log; no generan asientos en la
   auditoría de operaciones. `/actuator/health` y `/error` están excluidos del conteo.
+- `AuditoriaResultadoResolver` ya no tiene un mapa propio: 405 y 415 se registran como `METHOD_NOT_ALLOWED` y
+  `UNSUPPORTED_MEDIA_TYPE` (antes se registraban como `VALIDATION_ERROR`). Una excepción no reconocida se registra con
+  `HTTP_<estado>` cuando la respuesta no es 500.
 - Si dos peticiones concurrentes crean el mismo código de producto, la restricción única de base de datos puede saltar
   antes que la validación del servicio y la respuesta sería `409 DATA_INTEGRITY_VIOLATION` en lugar de
   `409 DUPLICATE_RESOURCE`.
