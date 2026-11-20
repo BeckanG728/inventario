@@ -131,7 +131,7 @@ negocio del stock inicial.
 | Mapeo | `ProductoMapper` (MapStruct) construye las respuestas de producto, incluido `stockCritico`. |
 | Seguridad sin estado | Filtro JWT antes del filtro de autenticación de Spring; CSRF deshabilitado; sesiones `STATELESS`. |
 | Rate limiting | `LoginRateLimitFilter` antes de `JwtAuthFilter` (IP y username) y `UsuarioRateLimitFilter` después (usuario de la BD). Estado en memoria detrás de `RateLimitStore`. |
-| Manejo de errores | `GlobalExceptionHandler` y `ErrorResponseWriter` unifican el contrato de error; ver [TABLA_ERRORES.md](TABLA_ERRORES.md). |
+| Manejo de errores | `ErrorCode` y `common/error` unifican el contrato para `GlobalExceptionHandler`, `ErrorResponseWriter`, seguridad, rate limiting y auditoría; ver [TABLA_ERRORES.md](TABLA_ERRORES.md). |
 | Prefijo de API | `/api`; respuestas JSON; fechas `Instant` en UTC. |
 
 ## 8. Verificación
