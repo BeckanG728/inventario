@@ -1,7 +1,7 @@
 # Tabla de errores — Sistema de Gestión de Inventario (Taller Mecánico)
 
 Documento generado a partir del código actual: `GlobalExceptionHandler`, `TokenAuthenticationEntryPoint`,
-`JwtAuthFilter`, `SecurityConfig` y los servicios de cada módulo.
+`JwtAuthFilter`, `LoginRateLimitFilter`, `UsuarioRateLimitFilter`, `SecurityConfig` y los servicios de cada módulo.
 
 ## 1. Contrato de error
 
@@ -56,6 +56,7 @@ Todos los errores controlados (excepciones de dominio, validación y seguridad) 
 | 409  | `STOCK_INSUFICIENTE`       | `StockInsuficienteException`                                                | Consumo o descuento que dejaría el stock negativo                                |
 | 405  | `METHOD_NOT_ALLOWED`       | `HttpRequestMethodNotSupportedException`                                    | Método HTTP no soportado para la ruta (incluye cabecera `Allow`)                 |
 | 415  | `UNSUPPORTED_MEDIA_TYPE`   | `HttpMediaTypeNotSupportedException`                                        | `Content-Type` no soportado en un endpoint con body (incluye cabecera `Accept`)  |
+| 429  | `RATE_LIMIT_EXCEEDED`      | `LoginRateLimitFilter` / `UsuarioRateLimitFilter`                           | Se superó el límite de login por IP o username, o el límite de peticiones por usuario. Incluye `Retry-After` en segundos |
 | 500  | —                          | Cualquier otra excepción                                                    | Error interno no previsto (sin contrato propio)                                  |
 
 Notas:
@@ -64,7 +65,10 @@ Notas:
   En `GET /api/existencias` un producto inactivo devuelve `400 VALIDATION_ERROR`, no 404.
 - En login, cualquier `AuthenticationException` de Spring (incluida cuenta deshabilitada) se convierte en
   `401 INVALID_CREDENTIALS`. `ACCOUNT_DISABLED` solo se emite desde el filtro JWT.
-- Los errores de seguridad (401 y 403) los escribe `ErrorResponseWriter` con el mismo contrato.
+- Los errores de seguridad (401 y 403) y los de limitación (429) los escribe `ErrorResponseWriter` con el mismo contrato.
+  El 429 incluye la cabecera `Retry-After` con los segundos que faltan para que se renueve la ventana.
+- Los rechazos por limitación se publican como eventos de seguridad y se registran en el log; no generan asientos en la
+  auditoría de operaciones. `/actuator/health` y `/error` están excluidos del conteo.
 - Si dos peticiones concurrentes crean el mismo código de producto, la restricción única de base de datos puede saltar
   antes que la validación del servicio y la respuesta sería `409 DATA_INTEGRITY_VIOLATION` en lugar de
   `409 DUPLICATE_RESOURCE`.

@@ -16,6 +16,8 @@ import com.taller.reporte.controller.EstadisticasController;
 import com.taller.reporte.controller.ReporteMovimientosController;
 import com.taller.reporte.service.EstadisticasService;
 import com.taller.reporte.service.ReporteMovimientosService;
+import com.taller.ratelimit.config.RateLimitProperties;
+import com.taller.ratelimit.store.InMemoryRateLimitStore;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -40,14 +42,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         ReporteMovimientosController.class,
         EstadisticasController.class
 })
-@Import({SecurityConfig.class, ErrorResponseWriter.class, TokenAuthenticationEntryPoint.class})
+@Import({SecurityConfig.class, ErrorResponseWriter.class, TokenAuthenticationEntryPoint.class,
+        RateLimitProperties.class, InMemoryRateLimitStore.class})
 @TestPropertySource(properties = {
         "SERVER_PORT=8080",
         "JWT_SECRET=test-secret-at-least-32-characters-long!!",
         "JWT_EXPIRACION_SEGUNDOS=3600",
         "ADMIN_USERNAME=admin",
         "ADMIN_PASSWORD=Password123!",
-        "ALERTAS_CRON=0 0 * * * ?"
+        "ALERTAS_CRON=0 0 * * * ?",
+        "RATE_LIMIT_LOGIN_IP=20",
+        "RATE_LIMIT_LOGIN_USERNAME=10",
+        "RATE_LIMIT_USUARIO=200",
+        "RATE_LIMIT_SWAGGER=1000",
+        "RATE_LIMIT_VENTANA_LOGIN_SEGUNDOS=60",
+        "RATE_LIMIT_VENTANA_USUARIO_SEGUNDOS=60"
 })
 class SecurityAccessTest {
 

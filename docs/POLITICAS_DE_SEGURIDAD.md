@@ -55,6 +55,9 @@ responsabilidades operativas dentro de sus módulos.
 - `GET /api/auditoria` es de solo lectura y está disponible solo para `ADMIN`.
 - Toda petición a un endpoint protegido sin autenticación o con un rol sin permiso se rechaza con `401` o
   `403 FORBIDDEN`, respectivamente.
+- El login se limita por IP y por username antes de validar el token; el resto de peticiones autenticadas se limita por
+  el usuario cargado desde la base de datos. Al superar un límite se responde `429 RATE_LIMIT_EXCEEDED` con
+  `Retry-After`. Los rechazos se registran como eventos de seguridad en el log, no como operaciones de negocio.
 
 ### 3.2 Matriz de acceso por grupo de endpoints
 
@@ -114,6 +117,10 @@ Esta sección conserva la trazabilidad con el código; no introduce nuevas polí
 | Carga de autoridades | `Usuario.getAuthorities()` a partir del rol almacenado | Garantiza que el rol efectivo sea el de la base de datos. |
 | Usuario semilla | `AdminSeeder` | Crea el usuario `ADMIN` si no existe. |
 | Auditoría de operaciones | `AuditoriaInterceptor`, `AuditoriaEventListener`, `AuditoriaController` | Registra operaciones que mutan estado y eventos de autenticación, sin persistir credenciales ni bodies, y expone la consulta solo a `ADMIN`. |
+| Límite de login | `LoginRateLimitFilter` | Cuenta intentos por IP y username antes de `JwtAuthFilter`. |
+| Límite por usuario | `UsuarioRateLimitFilter` | Cuenta el resto de peticiones autenticadas después de `JwtAuthFilter`. |
+| Estado de limitación | `RateLimitStore`, `InMemoryRateLimitStore` | Contadores en memoria sustituibles por un store compartido. |
+| Rechazos por límite | `SeguridadRechazoEvent`, `SeguridadRechazoListener` | Registra los rechazos como eventos de seguridad sin persistirlos en la auditoría. |
 
 La configuración del algoritmo, los claims, el secreto, la expiración y el arranque se documentan en
 [CONFIGURACION_TECNICA.md](CONFIGURACION_TECNICA.md).
