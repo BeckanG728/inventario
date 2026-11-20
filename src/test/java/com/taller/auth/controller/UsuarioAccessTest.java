@@ -5,6 +5,7 @@ import com.taller.auth.security.JwtUtil;
 import com.taller.auth.security.TokenAuthenticationEntryPoint;
 import com.taller.auth.service.UsuarioDetailsService;
 import com.taller.auth.service.UsuarioService;
+import com.taller.config.ErrorCatalogTestConfig;
 import com.taller.config.SecurityConfig;
 import com.taller.ratelimit.config.RateLimitProperties;
 import com.taller.ratelimit.store.InMemoryRateLimitStore;
@@ -26,7 +27,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(controllers = UsuarioController.class)
 @Import({SecurityConfig.class, ErrorResponseWriter.class, TokenAuthenticationEntryPoint.class,
-        RateLimitProperties.class, InMemoryRateLimitStore.class})
+        RateLimitProperties.class, InMemoryRateLimitStore.class,
+        ErrorCatalogTestConfig.class})
 @TestPropertySource(properties = {
         "SERVER_PORT=8080",
         "JWT_SECRET=test-secret-at-least-32-characters-long!!",

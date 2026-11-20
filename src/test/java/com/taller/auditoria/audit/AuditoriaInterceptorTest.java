@@ -18,13 +18,17 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class AuditoriaInterceptorTest {
 
     private final ApplicationEventPublisher publisher = mock(ApplicationEventPublisher.class);
-    private final AuditoriaInterceptor interceptor = new AuditoriaInterceptor(publisher);
+    private final AuditoriaResultadoResolver resultadoResolver = mock(AuditoriaResultadoResolver.class);
+    private final AuditoriaInterceptor interceptor = new AuditoriaInterceptor(publisher, resultadoResolver);
 
     @AfterEach
     void limpiarSeguridad() {
@@ -75,6 +79,8 @@ class AuditoriaInterceptorTest {
         MockHttpServletRequest request = peticion("POST", "/api/productos");
         MockHttpServletResponse response = new MockHttpServletResponse();
         response.setStatus(400);
+
+        when(resultadoResolver.resolver(any(), eq(400))).thenReturn("VALIDATION_ERROR");
 
         interceptor.preHandle(request, response, new Object());
         interceptor.afterCompletion(request, response, new Object(), new IllegalArgumentException("Inválido"));
