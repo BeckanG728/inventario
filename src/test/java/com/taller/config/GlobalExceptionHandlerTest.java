@@ -2,6 +2,8 @@ package com.taller.config;
 
 import com.taller.auth.exception.UserAlreadyExistsException;
 import com.taller.auth.exception.InvalidRoleException;
+import com.taller.auth.exception.UltimoAdminActivoException;
+import com.taller.auth.exception.UsuarioNotFoundException;
 import com.taller.common.exception.DuplicateResourceException;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -62,6 +64,31 @@ class GlobalExceptionHandlerTest {
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertEquals("INVALID_ROLE", response.getBody().error());
         assertEquals("El rol ADMIN no puede asignarse mediante el registro", response.getBody().message());
+    }
+
+    @Test
+    void usuarioNotFound_returnsNotFoundWithContract() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/api/usuarios/99");
+
+        ResponseEntity<ErrorResponse> response = handler.handleUsuarioNotFound(
+                new UsuarioNotFoundException(99L), request);
+
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        assertEquals("NOT_FOUND", response.getBody().error());
+        assertEquals("/api/usuarios/99", response.getBody().endpoint());
+    }
+
+    @Test
+    void ultimoAdminActivo_returnsConflictWithOwnCode() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/api/usuarios/1");
+
+        ResponseEntity<ErrorResponse> response = handler.handleUltimoAdminActivo(
+                new UltimoAdminActivoException(), request);
+
+        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+        assertEquals("ULTIMO_ADMIN_ACTIVO", response.getBody().error());
     }
 
     @Test

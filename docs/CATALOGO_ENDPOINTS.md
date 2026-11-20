@@ -27,6 +27,10 @@ y [REQUISITOS_FUNCIONALES.md](REQUISITOS_FUNCIONALES.md).
 |-----------------|--------|--------------------------------------|:-----:|:-----------:|:--------:|:-------:|
 | Seguridad       | POST   | `/api/auth/register`                 |  ✅   |     ❌      |    ❌    |    —    |
 | Seguridad       | POST   | `/api/auth/login`                    |   —   |      —      |    —     |   ✅    |
+| Seguridad       | GET    | `/api/usuarios`                      |  ✅   |     ❌      |    ❌    |    —    |
+| Seguridad       | GET    | `/api/usuarios/{id}`                 |  ✅   |     ❌      |    ❌    |    —    |
+| Seguridad       | PUT    | `/api/usuarios/{id}`                 |  ✅   |     ❌      |    ❌    |    —    |
+| Seguridad       | PATCH  | `/api/usuarios/{id}/password`        |  ✅   |     ❌      |    ❌    |    —    |
 | Catálogo        | POST   | `/api/categorias`                    |  ❌   |     ✅      |    ❌    |    —    |
 | Catálogo        | POST   | `/api/proveedores`                   |  ❌   |     ✅      |    ❌    |    —    |
 | Productos       | POST   | `/api/productos`                     |  ❌   |     ✅      |    ❌    |    —    |
@@ -125,6 +129,64 @@ Autentica un usuario y emite un JWT.
 `expiresIn` se expresa en segundos y proviene de `JWT_EXPIRACION_SEGUNDOS`.
 
 - **Errores:** `400 VALIDATION_ERROR`, `401 INVALID_CREDENTIALS`.
+
+---
+
+### 3.3 Mantenimiento de usuarios
+
+Todos los endpoints de esta sección requieren `ADMIN`. Las respuestas nunca incluyen el hash de la contraseña.
+
+#### GET `/api/usuarios`
+
+Lista paginada. Parámetros opcionales: `page` (default `0`), `size` (default `10`, máximo `100`), `username` (búsqueda parcial), `role` (`ADMIN`, `JEFE_TALLER` o `MECANICO`) y `activo` (`true`/`false`).
+
+Respuesta 200 con `PaginaResponse<UsuarioResponse>`:
+
+```json
+{
+  "content": [
+    {
+      "id": 5,
+      "username": "jefe_taller1",
+      "role": "JEFE_TALLER",
+      "activo": true,
+      "createdAt": "2026-10-31T15:04:05Z"
+    }
+  ],
+  "page": 0,
+  "size": 10,
+  "totalElements": 1,
+  "totalPages": 1
+}
+```
+
+- **Errores:** `400 VALIDATION_ERROR`, `400 INVALID_ROLE` (filtro `role` inválido), `401`, `403 FORBIDDEN`.
+
+#### GET `/api/usuarios/{id}`
+
+Devuelve el mismo `UsuarioResponse`. Errores: `404 NOT_FOUND`, `401`, `403 FORBIDDEN`.
+
+#### PUT `/api/usuarios/{id}`
+
+Cambia el rol y el estado activo. No existe borrado físico: enviar `activo: false` desactiva la cuenta.
+
+```json
+{ "role": "MECANICO", "activo": false }
+```
+
+No se puede desactivar ni cambiar de rol al último `ADMIN` activo: responde `409 ULTIMO_ADMIN_ACTIVO`. Los cambios de rol y estado se reflejan en la siguiente petición porque `JwtAuthFilter` recarga al usuario desde la base de datos en cada request.
+
+- **Errores:** `400 VALIDATION_ERROR`, `400 INVALID_ROLE`, `401`, `403 FORBIDDEN`, `404 NOT_FOUND`, `409 ULTIMO_ADMIN_ACTIVO`.
+
+#### PATCH `/api/usuarios/{id}/password`
+
+Restablece la contraseña. La nueva contraseña debe tener al menos 8 caracteres, una mayúscula y un número. Responde el `UsuarioResponse` actualizado.
+
+```json
+{ "password": "NuevaPass123" }
+```
+
+- **Errores:** `400 VALIDATION_ERROR`, `401`, `403 FORBIDDEN`, `404 NOT_FOUND`.
 
 ---
 
