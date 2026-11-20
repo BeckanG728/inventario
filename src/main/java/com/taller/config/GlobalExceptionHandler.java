@@ -2,7 +2,9 @@ package com.taller.config;
 
 import com.taller.auth.exception.InvalidCredentialsException;
 import com.taller.auth.exception.InvalidRoleException;
+import com.taller.auth.exception.UltimoAdminActivoException;
 import com.taller.auth.exception.UserAlreadyExistsException;
+import com.taller.auth.exception.UsuarioNotFoundException;
 import com.taller.common.exception.StockInsuficienteException;
 import com.taller.producto.exception.ProductoNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -55,6 +57,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleProductoNotFound(ProductoNotFoundException ex,
                                                                 HttpServletRequest req) {
         return error(HttpStatus.NOT_FOUND, "NOT_FOUND", ex.getMessage(), req);
+    }
+
+    @ExceptionHandler(UsuarioNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleUsuarioNotFound(UsuarioNotFoundException ex,
+                                                               HttpServletRequest req) {
+        return error(HttpStatus.NOT_FOUND, "NOT_FOUND", ex.getMessage(), req);
+    }
+
+    @ExceptionHandler(UltimoAdminActivoException.class)
+    public ResponseEntity<ErrorResponse> handleUltimoAdminActivo(UltimoAdminActivoException ex,
+                                                                 HttpServletRequest req) {
+        return error(HttpStatus.CONFLICT, "ULTIMO_ADMIN_ACTIVO", ex.getMessage(), req);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

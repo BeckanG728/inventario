@@ -47,8 +47,10 @@ Todos los errores controlados (excepciones de dominio, validación y seguridad) 
 | 401  | `ACCOUNT_DISABLED`         | `JwtAuthFilter` (`usuario.isEnabled() == false`)                            | Usuario inactivo con token válido                                                |
 | 403  | `FORBIDDEN`                | `accessDeniedHandler` de `SecurityConfig`                                   | Rol sin permiso: regla de `SecurityConfig` (incluye `ADMIN` en endpoints de consulta y `MECANICO` en dashboard/reportes) o `@PreAuthorize` |
 | 404  | `NOT_FOUND`                | `ProductoNotFoundException`                                                 | Producto inexistente (o inactivo, en operaciones que exigen producto activo)     |
+| 404  | `NOT_FOUND`                | `UsuarioNotFoundException`                                                  | Usuario inexistente en los endpoints de mantenimiento                            |
 | 404  | `NOT_FOUND`                | `NoResourceFoundException`                                                  | Ruta inexistente (con token válido; sin token responde 401)                      |
 | 409  | `USER_ALREADY_EXISTS`      | `UserAlreadyExistsException`                                                | Username ya registrado                                                           |
+| 409  | `ULTIMO_ADMIN_ACTIVO`      | `UltimoAdminActivoException`                                                | Intento de desactivar o cambiar el rol del último `ADMIN` activo                 |
 | 409  | `DUPLICATE_RESOURCE`       | `DuplicateResourceException`                                                | Producto con `codigo` repetido, categoría con nombre repetido (sin distinguir mayúsculas) o proveedor con RUC repetido |
 | 409  | `DATA_INTEGRITY_VIOLATION` | `DataIntegrityViolationException`                                           | Violación de restricción de base de datos                                        |
 | 409  | `STOCK_INSUFICIENTE`       | `StockInsuficienteException`                                                | Consumo o descuento que dejaría el stock negativo                                |
