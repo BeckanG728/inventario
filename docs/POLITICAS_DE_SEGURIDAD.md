@@ -47,11 +47,12 @@ responsabilidades operativas dentro de sus módulos.
 - Solo `JEFE_TALLER` administra productos, categorías y proveedores (`RN107`).
 - Solo `JEFE_TALLER` registra entradas y ajustes de inventario (`RN201`, `RN209`).
 - `JEFE_TALLER` y `MECANICO` pueden registrar consumos (`RN204`).
-- `ADMIN` solo registra usuarios y no accede a endpoints de negocio (`RN117`).
+- `ADMIN` registra usuarios y consulta la auditoría, pero no accede a endpoints de negocio (`RN117`).
 - `GET /api/productos`, `GET /api/existencias` y `GET /api/alertas` están disponibles para `JEFE_TALLER` y
   `MECANICO`; `ADMIN` no accede.
 - `GET /api/dashboard`, `GET /api/reportes/**` (incluidas las exportaciones) y `GET /api/estadisticas` están
   disponibles solo para `JEFE_TALLER`; `ADMIN` y `MECANICO` no acceden.
+- `GET /api/auditoria` es de solo lectura y está disponible solo para `ADMIN`.
 - Toda petición a un endpoint protegido sin autenticación o con un rol sin permiso se rechaza con `401` o
   `403 FORBIDDEN`, respectivamente.
 
@@ -61,6 +62,7 @@ responsabilidades operativas dentro de sus módulos.
 |-------|-----------|:-------:|:-------------:|:---------:|:-------:|
 | Registro de usuarios | `POST /api/auth/register` | ✅ | ❌ | ❌ | — |
 | Inicio de sesión | `POST /api/auth/login` | — | — | — | ✅ |
+| Auditoría | `GET /api/auditoria` | ✅ | ❌ | ❌ | — |
 | Catálogo | `POST /api/categorias`, `POST /api/proveedores` | ❌ | ✅ | ❌ | — |
 | Productos (escritura) | `POST /api/productos`, `PUT /api/productos/**`, `PATCH /api/productos/**` | ❌ | ✅ | ❌ | — |
 | Productos (consulta) | `GET /api/productos` | ❌ | ✅ | ✅ | — |
@@ -111,6 +113,7 @@ Esta sección conserva la trazabilidad con el código; no introduce nuevas polí
 | Emisión y validación de tokens | `JwtUtil`, `JwtAuthFilter`, `TokenAuthenticationEntryPoint`, `ErrorResponseWriter` | Genera el JWT, valida firma y expiración, carga el usuario desde la base de datos y escribe los errores de seguridad. |
 | Carga de autoridades | `Usuario.getAuthorities()` a partir del rol almacenado | Garantiza que el rol efectivo sea el de la base de datos. |
 | Usuario semilla | `AdminSeeder` | Crea el usuario `ADMIN` si no existe. |
+| Auditoría de operaciones | `AuditoriaInterceptor`, `AuditoriaEventListener`, `AuditoriaController` | Registra operaciones que mutan estado y eventos de autenticación, sin persistir credenciales ni bodies, y expone la consulta solo a `ADMIN`. |
 
 La configuración del algoritmo, los claims, el secreto, la expiración y el arranque se documentan en
 [CONFIGURACION_TECNICA.md](CONFIGURACION_TECNICA.md).

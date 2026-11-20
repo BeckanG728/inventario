@@ -31,6 +31,7 @@ y [REQUISITOS_FUNCIONALES.md](REQUISITOS_FUNCIONALES.md).
 | Seguridad       | GET    | `/api/usuarios/{id}`                 |  ✅   |     ❌      |    ❌    |    —    |
 | Seguridad       | PUT    | `/api/usuarios/{id}`                 |  ✅   |     ❌      |    ❌    |    —    |
 | Seguridad       | PATCH  | `/api/usuarios/{id}/password`        |  ✅   |     ❌      |    ❌    |    —    |
+| Auditoría       | GET    | `/api/auditoria`                     |  ✅   |     ❌      |    ❌    |    —    |
 | Catálogo        | POST   | `/api/categorias`                    |  ❌   |     ✅      |    ❌    |    —    |
 | Catálogo        | POST   | `/api/proveedores`                   |  ❌   |     ✅      |    ❌    |    —    |
 | Productos       | POST   | `/api/productos`                     |  ❌   |     ✅      |    ❌    |    —    |
@@ -187,6 +188,52 @@ Restablece la contraseña. La nueva contraseña debe tener al menos 8 caracteres
 ```
 
 - **Errores:** `400 VALIDATION_ERROR`, `401`, `403 FORBIDDEN`, `404 NOT_FOUND`.
+
+### 3.4 GET `/api/auditoria`
+
+Consulta paginada y solo lectura de los asientos de auditoría. Requiere `ADMIN`.
+
+Parámetros opcionales:
+
+- `page` (default `0`) y `size` (default `10`, máximo `100`).
+- `desde` y `hasta` (`yyyy-MM-dd`): rango inclusivo interpretado en `America/Lima` y convertido a UTC.
+- `actor`: búsqueda parcial por el username guardado en el asiento.
+- `tipo`: `OPERACION` o `AUTENTICACION`.
+- `resultado`: `OK`, `ERROR` o un código concreto, por ejemplo `VALIDATION_ERROR`, `FORBIDDEN` o
+  `STOCK_INSUFICIENTE`.
+
+Respuesta 200 con `PaginaResponse<AuditoriaResponse>`:
+
+```json
+{
+  "content": [
+    {
+      "id": 12,
+      "fecha": "2026-11-19T17:04:05Z",
+      "tipo": "OPERACION",
+      "actorId": 5,
+      "actorUsername": "jefe_taller1",
+      "metodo": "PUT",
+      "endpoint": "/api/productos/8",
+      "recurso": "producto",
+      "recursoId": "8",
+      "resultado": "OK",
+      "exito": true
+    }
+  ],
+  "page": 0,
+  "size": 10,
+  "totalElements": 1,
+  "totalPages": 1
+}
+```
+
+El actor se guarda como snapshot (`actorId` y `actorUsername`), por lo que el historial conserva el nombre correcto
+aunque el usuario sea modificado o desactivado después. Las operaciones de autenticación se registran con
+`tipo: "AUTENTICACION"` y, cuando no hay usuario autenticado, `actorUsername: "sistema"`. No se persisten passwords,
+tokens ni cuerpos de petición.
+
+- **Errores:** `400 VALIDATION_ERROR` (rango invertido, `tipo` inválido), `401`, `403 FORBIDDEN`.
 
 ---
 
