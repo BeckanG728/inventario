@@ -129,7 +129,7 @@ Autentica un usuario y emite un JWT.
 
 `expiresIn` se expresa en segundos y proviene de `JWT_EXPIRACION_SEGUNDOS`.
 
-- **Errores:** `400 VALIDATION_ERROR`, `401 INVALID_CREDENTIALS`.
+- **Errores:** `400 VALIDATION_ERROR`, `401 INVALID_CREDENTIALS`, `429 RATE_LIMIT_EXCEEDED` (con `Retry-After`).
 
 ---
 
@@ -234,6 +234,27 @@ aunque el usuario sea modificado o desactivado después. Las operaciones de aute
 tokens ni cuerpos de petición.
 
 - **Errores:** `400 VALIDATION_ERROR` (rango invertido, `tipo` inválido), `401`, `403 FORBIDDEN`.
+
+### 3.5 Limitación de frecuencia
+
+Todas las rutas `/api/**` pueden responder `429 RATE_LIMIT_EXCEEDED` con la cabecera `Retry-After` en segundos. El
+cuerpo usa el contrato de `docs/TABLA_ERRORES.md`. Los rechazos se publican como eventos de seguridad y se registran en
+el log, no en la auditoría de operaciones.
+
+| Ámbito | Clave | Límite | Variable de entorno |
+|--------|-------|--------|---------------------|
+| `POST /api/auth/login` | IP de origen (con `X-Forwarded-For` o `X-Real-IP` si existen) | Por ventana | `RATE_LIMIT_LOGIN_IP` |
+| `POST /api/auth/login` | Username normalizado | Por ventana | `RATE_LIMIT_LOGIN_USERNAME` |
+| Resto de endpoints autenticados | `id` del usuario de la BD | Por ventana | `RATE_LIMIT_USUARIO` |
+| Swagger (`/swagger-ui/**`, `/v3/api-docs/**`, `/swagger-resources/**`, `/webjars/swagger-ui/**`) | `id` del usuario de la BD | Límite holgado | `RATE_LIMIT_SWAGGER` |
+
+Las ventanas se configuran con `RATE_LIMIT_VENTANA_LOGIN_SEGUNDOS` y `RATE_LIMIT_VENTANA_USUARIO_SEGUNDOS`.
+`/actuator/health` y `/error` están excluidos. El filtro de login corre antes de `JwtAuthFilter` y el de usuario
+después, por lo que un cambio de rol o de estado en la BD se refleja antes de aplicar el límite por cuenta.
+
+El estado se mantiene en memoria (`InMemoryRateLimitStore`) detrás de la interfaz `RateLimitStore`, de modo que puede
+sustituirse por un store compartido si aparecen más réplicas. No hay valores por defecto en `application.yaml`: todas
+las variables están listadas en `.env.example`.
 
 ---
 

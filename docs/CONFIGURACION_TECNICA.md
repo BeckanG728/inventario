@@ -36,6 +36,12 @@ El token se envía en la cabecera `Authorization: Bearer <token>`. La aplicació
 | `ADMIN_USERNAME` | Username del usuario semilla `ADMIN` | Sí |
 | `ADMIN_PASSWORD` | Contraseña del usuario semilla `ADMIN` | Sí |
 | `ALERTAS_CRON` | Expresión cron de la revisión programada de stock | Sí |
+| `RATE_LIMIT_LOGIN_IP` | Número máximo de intentos de login por IP y ventana | Sí |
+| `RATE_LIMIT_LOGIN_USERNAME` | Número máximo de intentos de login por username y ventana | Sí |
+| `RATE_LIMIT_USUARIO` | Número máximo de peticiones autenticadas por usuario y ventana | Sí |
+| `RATE_LIMIT_SWAGGER` | Límite holgado para rutas de Swagger | Sí |
+| `RATE_LIMIT_VENTANA_LOGIN_SEGUNDOS` | Duración de la ventana de login, en segundos | Sí |
+| `RATE_LIMIT_VENTANA_USUARIO_SEGUNDOS` | Duración de la ventana del resto de endpoints, en segundos | Sí |
 
 ### 2.1 Validación de arranque (fail-fast)
 
@@ -43,6 +49,7 @@ La aplicación no arranca si:
 
 - `JWT_SECRET` está vacío o tiene menos de 32 bytes.
 - `JWT_EXPIRACION_SEGUNDOS` es nulo o menor o igual que 0.
+- Cualquiera de las variables `RATE_LIMIT_*` es nula o menor que 1 (`@Validated` en `RateLimitProperties`).
 
 En esos casos se lanza una `IllegalStateException` con un mensaje que comienza por `FATAL`. La validación se ejecuta
 al inicializar la configuración (`AppConfig`, `@PostConstruct`). Origen: RN116.
@@ -123,6 +130,7 @@ negocio del stock inicial.
 | Lógica pura | `ValorInventarioCalculator`, `EstadisticasBucketing` y `BajoStockAgrupador` no dependen de Spring ni de la base de datos. |
 | Mapeo | `ProductoMapper` (MapStruct) construye las respuestas de producto, incluido `stockCritico`. |
 | Seguridad sin estado | Filtro JWT antes del filtro de autenticación de Spring; CSRF deshabilitado; sesiones `STATELESS`. |
+| Rate limiting | `LoginRateLimitFilter` antes de `JwtAuthFilter` (IP y username) y `UsuarioRateLimitFilter` después (usuario de la BD). Estado en memoria detrás de `RateLimitStore`. |
 | Manejo de errores | `GlobalExceptionHandler` y `ErrorResponseWriter` unifican el contrato de error; ver [TABLA_ERRORES.md](TABLA_ERRORES.md). |
 | Prefijo de API | `/api`; respuestas JSON; fechas `Instant` en UTC. |
 
