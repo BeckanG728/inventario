@@ -144,14 +144,17 @@ class SecurityAccessTest {
         mockMvc.perform(get("/api/estadisticas")).andExpect(status().isForbidden());
     }
 
-    // --- T6: MECANICO accede a productos, existencias y alertas -> 200 OK ---
+    // --- T6: MECANICO accede a productos y alertas -> 200 OK; existencias -> 403 FORBIDDEN ---
 
     @Test
     @WithMockUser(roles = "MECANICO")
-    void mecanico_consultasInventario_permiteAcceso() throws Exception {
+    void mecanico_consultasInventario_sinExistencias() throws Exception {
         mockMvc.perform(get("/api/productos")).andExpect(status().isOk());
-        mockMvc.perform(get("/api/existencias?ids=1")).andExpect(status().isOk());
         mockMvc.perform(get("/api/alertas")).andExpect(status().isOk());
+        mockMvc.perform(get("/api/existencias?ids=1"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("FORBIDDEN"))
+                .andExpect(jsonPath("$.endpoint").value("/api/existencias"));
     }
 
     // --- T4, T5, T6: JEFE_TALLER accede a todos ---
