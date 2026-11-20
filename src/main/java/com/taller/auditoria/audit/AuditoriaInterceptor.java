@@ -22,9 +22,12 @@ public class AuditoriaInterceptor implements HandlerInterceptor {
     static final String ATTR_ENDPOINT = "auditoria.endpoint";
 
     private final ApplicationEventPublisher publisher;
+    private final AuditoriaResultadoResolver resultadoResolver;
 
-    public AuditoriaInterceptor(ApplicationEventPublisher publisher) {
+    public AuditoriaInterceptor(ApplicationEventPublisher publisher,
+                                AuditoriaResultadoResolver resultadoResolver) {
         this.publisher = publisher;
+        this.resultadoResolver = resultadoResolver;
     }
 
     @Override
@@ -62,7 +65,7 @@ public class AuditoriaInterceptor implements HandlerInterceptor {
             return;
         }
         boolean exito = ex == null && response.getStatus() < 400;
-        String resultado = exito ? "OK" : AuditoriaResultadoResolver.resolver(ex, response.getStatus());
+        String resultado = exito ? "OK" : resultadoResolver.resolver(ex, response.getStatus());
         try {
             publisher.publishEvent(new OperacionAuditadaEvent(
                     (AuditoriaTipo) request.getAttribute(ATTR_TIPO),

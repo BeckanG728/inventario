@@ -5,6 +5,8 @@ import com.taller.auth.security.JwtAuthFilter;
 import com.taller.auth.security.JwtUtil;
 import com.taller.auth.security.TokenAuthenticationEntryPoint;
 import com.taller.auth.service.UsuarioDetailsService;
+import com.taller.common.error.ErrorCode;
+import com.taller.common.error.ErrorDefinition;
 import com.taller.ratelimit.config.RateLimitProperties;
 import com.taller.ratelimit.filter.LoginRateLimitFilter;
 import com.taller.ratelimit.filter.UsuarioRateLimitFilter;
@@ -13,7 +15,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -88,8 +89,8 @@ public class SecurityConfig {
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler((request, response, accessDeniedException) ->
-                                errorResponseWriter.write(request, response, HttpStatus.FORBIDDEN,
-                                        "FORBIDDEN", "No tiene permisos para realizar esta acción")))
+                                errorResponseWriter.write(request, response,
+                                        ErrorDefinition.of(ErrorCode.FORBIDDEN))))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/login", "/actuator/health", "/actuator/info", "/error")
                         .permitAll()

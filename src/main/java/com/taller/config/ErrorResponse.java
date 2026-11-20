@@ -15,8 +15,4 @@ public record ErrorResponse(
 
     public record FieldDetail(String field, String reason) {
     }
-
-    public static ErrorResponse of(String error, String message, String endpoint) {
-        return new ErrorResponse(error, message, List.of(), endpoint, Instant.now());
-    }
 }

@@ -1,9 +1,10 @@
 package com.taller.auth.security;
 
+import com.taller.common.error.ErrorCode;
+import com.taller.common.error.ErrorDefinition;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
@@ -24,17 +25,10 @@ public class TokenAuthenticationEntryPoint implements AuthenticationEntryPoint {
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response,
                          AuthenticationException authException) throws IOException {
-        String errorCode = String.valueOf(request.getAttribute(JWT_ERROR_ATTRIBUTE));
+        ErrorCode code = ErrorCode.desdeAtributoJwt(String.valueOf(request.getAttribute(JWT_ERROR_ATTRIBUTE)));
+        ErrorDefinition definition = ErrorDefinition.of(code);
 
-        switch (errorCode) {
-            case TOKEN_EXPIRED -> errorResponseWriter.write(request, response, HttpStatus.UNAUTHORIZED,
-                    TOKEN_EXPIRED, "El token ha expirado");
-            case TOKEN_INVALID -> errorResponseWriter.write(request, response, HttpStatus.UNAUTHORIZED,
-                    TOKEN_INVALID, "El token de autenticación no es válido");
-            case ACCOUNT_DISABLED -> errorResponseWriter.write(request, response, HttpStatus.UNAUTHORIZED,
-                    ACCOUNT_DISABLED, "La cuenta está desactivada");
-            default -> errorResponseWriter.write(request, response, HttpStatus.UNAUTHORIZED,
-                    "UNAUTHORIZED", "Falta el token de autenticación");
-        }
+        errorResponseWriter.write(request, response,
+                definition.status(), definition.code(), definition.message());
     }
 }
