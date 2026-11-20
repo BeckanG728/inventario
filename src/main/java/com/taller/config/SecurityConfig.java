@@ -102,6 +102,8 @@ public class SecurityConfig {
                         .hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/categorias", "/api/proveedores")
                         .hasRole("JEFE_TALLER")
+                        .requestMatchers(HttpMethod.GET, "/api/categorias", "/api/proveedores")
+                        .hasRole("JEFE_TALLER")
                         .requestMatchers(HttpMethod.POST, "/api/productos")
                         .hasRole("JEFE_TALLER")
                         .requestMatchers(HttpMethod.PUT, "/api/productos/**")
