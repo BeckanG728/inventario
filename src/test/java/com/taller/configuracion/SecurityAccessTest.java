@@ -102,7 +102,6 @@ class SecurityAccessTest {
         org.mockito.Mockito.when(productoService.listar(
                 org.mockito.ArgumentMatchers.anyInt(),
                 org.mockito.ArgumentMatchers.anyInt(),
-                org.mockito.ArgumentMatchers.any(),
                 org.mockito.ArgumentMatchers.any())).thenReturn(org.springframework.data.domain.Page.empty());
     }
 

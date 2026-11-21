@@ -71,24 +71,44 @@ public class ProductoServiceImpl implements ProductoService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<ProductoResponse> listar(int page, int size, String nombre, Long categoriaId) {
+    public Page<ProductoResponse> listar(int page, int size, ProductoFiltro filtro) {
         Pageable pageable = PageRequest.of(
                 Math.max(page, 0),
                 Math.clamp(size, 1, TAMANO_PAGINA_MAXIMO),
                 Sort.by("nombre", "id"));
-        String filtroNombre = (nombre == null || nombre.isBlank()) ? null : nombre.trim();
 
         Specification<Producto> filtros = Specification.unrestricted();
-        if (filtroNombre != null) {
-            filtros = filtros.and(ProductoSpecification.nombreContiene(filtroNombre));
+
+        String nombre = textoONull(filtro.nombre());
+        if (nombre != null) {
+            filtros = filtros.and(ProductoSpecification.nombreContiene(nombre));
         }
-        if (categoriaId != null) {
-            filtros = filtros.and(ProductoSpecification.categoriaId(categoriaId));
+        if (filtro.categoriaId() != null) {
+            filtros = filtros.and(ProductoSpecification.categoriaId(filtro.categoriaId()));
+        }
+        String codigo = textoONull(filtro.codigo());
+        if (codigo != null) {
+            filtros = filtros.and(ProductoSpecification.codigoContiene(codigo));
+        }
+        if (filtro.proveedorId() != null) {
+            filtros = filtros.and(ProductoSpecification.proveedorId(filtro.proveedorId()));
+        }
+        String unidadMedida = textoONull(filtro.unidadMedida());
+        if (unidadMedida != null) {
+            filtros = filtros.and(ProductoSpecification.unidadMedidaIgual(unidadMedida));
+        }
+        if (filtro.activo() != null) {
+            filtros = filtros.and(ProductoSpecification.activoIgual(filtro.activo()));
+        }
+        if (filtro.stockCritico() != null) {
+            filtros = filtros.and(ProductoSpecification.stockCritico(filtro.stockCritico()));
         }
 
-        Page<Producto> productos = productoRepository.findAll(filtros, pageable);
+        return productoRepository.findAll(filtros, pageable).map(productoMapper::toResponse);
+    }
 
-        return productos.map(productoMapper::toResponse);
+    private static String textoONull(String valor) {
+        return valor == null || valor.isBlank() ? null : valor.trim();
     }
 
     @Override

@@ -9,9 +9,11 @@ public interface ProductoService {
 
     ProductoResponse crear(CreateProductoRequest request);
 
-    Page<ProductoResponse> listar(int page, int size, String nombre, Long categoriaId);
-
     ProductoResponse actualizar(Long id, UpdateProductoRequest request);
 
     ProductoResponse desactivar(Long id);
+
+    ProductoResponse actualizarStockMinimo(Long id, Integer nuevoStockMinimo);
+
+    Page<ProductoResponse> listar(int page, int size, ProductoFiltro filtro);
 }
