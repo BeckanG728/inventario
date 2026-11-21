@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,6 +31,12 @@ public interface ProductoRepository extends JpaRepository<Producto, Long>,
 
     @EntityGraph(attributePaths = {"categoria", "proveedor"})
     List<Producto> findByActivoTrueOrderByNombreAsc();
+
+    /** Bloquea todos los productos en orden ascendente de id para evitar interbloqueos entre consumos. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @EntityGraph(attributePaths = {"categoria", "proveedor"})
+    @Query("select p from Producto p where p.id in :ids and p.activo = true order by p.id")
+    List<Producto> findAllByIdInAndActivoTrueForUpdate(@Param("ids") Collection<Long> ids);
 
     long countByActivoTrue();
 

@@ -2,7 +2,6 @@ package com.taller.inventario.consumo.service.impl;
 
 import com.taller.catalogo.api.ProductoStock;
 import com.taller.catalogo.api.ProductoStock.ResultadoStock;
-import com.taller.catalogo.api.ProductoStockMinimo;
 import com.taller.compartido.exception.StockInsuficienteException;
 import com.taller.inventario.consumo.domain.ConsumoItem;
 import com.taller.inventario.consumo.service.ConsumoStockService;
@@ -15,9 +14,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -31,7 +30,6 @@ public class ConsumoStockServiceImpl implements ConsumoStockService {
     private static final String STOCK_INSUFICIENTE =
             "Stock insuficiente para el producto ID %d (%s): solicitado %d, disponible %d";
 
-    private final ProductoStockMinimo productoStockMinimo;
     private final ProductoStock productoStock;
     private final MovimientoInventarioRepository movimientoInventarioRepository;
 
@@ -82,7 +80,7 @@ public class ConsumoStockServiceImpl implements ConsumoStockService {
 
     /** Agrupa por producto para validar el total cuando un producto se repite en varios ítems. */
     private Map<Long, Integer> agruparCantidades(List<ConsumoItem> items) {
-        Map<Long, Integer> totales = new LinkedHashMap<>();
+        Map<Long, Integer> totales = new TreeMap<>();
         for (ConsumoItem item : items) {
             try {
                 totales.merge(item.productoId(), item.cantidad(), Math::addExact);
@@ -94,8 +92,8 @@ public class ConsumoStockServiceImpl implements ConsumoStockService {
     }
 
     private void validarDisponibilidad(Map<Long, Integer> cantidadesPorProducto) {
-        Map<Long, ProductoResponse> porId = productoStockMinimo
-                .consultarPorIds(new ArrayList<>(cantidadesPorProducto.keySet())).stream()
+        Map<Long, ProductoResponse> porId = productoStock
+                .bloquearParaDescuento(new ArrayList<>(cantidadesPorProducto.keySet())).stream()
                 .collect(Collectors.toMap(ProductoResponse::id, Function.identity()));
 
         for (Map.Entry<Long, Integer> entry : cantidadesPorProducto.entrySet()) {

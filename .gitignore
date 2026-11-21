@@ -47,3 +47,6 @@ Thumbs.db
 
 # Logs
 *.log
+.claude
+AGENTS.md
+CLAUDE.md

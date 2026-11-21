@@ -2,7 +2,6 @@ package com.taller.inventario.consumo.service.impl;
 
 import com.taller.catalogo.api.ProductoStock;
 import com.taller.catalogo.api.ProductoStock.ResultadoStock;
-import com.taller.catalogo.api.ProductoStockMinimo;
 import com.taller.compartido.exception.StockInsuficienteException;
 import com.taller.inventario.consumo.domain.ConsumoItem;
 import com.taller.inventario.movimiento.entity.MovimientoInventario;
@@ -35,9 +34,6 @@ import static org.mockito.Mockito.when;
 class ConsumoStockServiceImplTest {
 
     @Mock
-    private ProductoStockMinimo productoStockMinimo;
-
-    @Mock
     private ProductoStock productoStock;
 
     @Mock
@@ -56,7 +52,7 @@ class ConsumoStockServiceImplTest {
     void todosLosItemsValidos_descuentaStockYRegistraMovimientos() {
         ProductoResponse aceite = producto(1L, 10, true);
         ProductoResponse filtro = producto(2L, 5, true);
-        when(productoStockMinimo.consultarPorIds(List.of(1L, 2L))).thenReturn(List.of(aceite, filtro));
+        when(productoStock.bloquearParaDescuento(List.of(1L, 2L))).thenReturn(List.of(aceite, filtro));
         when(productoStock.descontarStock(1L, 2)).thenReturn(new ResultadoStock(aceite, 10, 8));
         when(productoStock.descontarStock(2L, 1)).thenReturn(new ResultadoStock(filtro, 5, 4));
         when(movimientoInventarioRepository.save(any(MovimientoInventario.class)))
@@ -79,7 +75,7 @@ class ConsumoStockServiceImplTest {
     @Test
     void consumoExactoDelStock_disponibleLoDejaEnCero() {
         ProductoResponse producto = producto(1L, 3, true);
-        when(productoStockMinimo.consultarPorIds(List.of(1L))).thenReturn(List.of(producto));
+        when(productoStock.bloquearParaDescuento(List.of(1L))).thenReturn(List.of(producto));
         when(productoStock.descontarStock(1L, 3)).thenReturn(new ResultadoStock(producto, 3, 0));
         when(movimientoInventarioRepository.save(any(MovimientoInventario.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -93,7 +89,7 @@ class ConsumoStockServiceImplTest {
 
     @Test
     void stockInsuficiente_noDescuentaNadaNiRegistraMovimientos() {
-        when(productoStockMinimo.consultarPorIds(List.of(1L))).thenReturn(List.of(producto(1L, 2, true)));
+        when(productoStock.bloquearParaDescuento(List.of(1L))).thenReturn(List.of(producto(1L, 2, true)));
 
         StockInsuficienteException ex = assertThrows(StockInsuficienteException.class,
                 () -> service.validarYDescontarStock(
@@ -108,7 +104,7 @@ class ConsumoStockServiceImplTest {
 
     @Test
     void productoInexistente_seIdentificaElProducto() {
-        when(productoStockMinimo.consultarPorIds(List.of(99L))).thenReturn(List.of());
+        when(productoStock.bloquearParaDescuento(List.of(99L))).thenReturn(List.of());
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> service.validarYDescontarStock(
@@ -120,7 +116,7 @@ class ConsumoStockServiceImplTest {
 
     @Test
     void productoInactivo_seIdentificaElProducto() {
-        when(productoStockMinimo.consultarPorIds(List.of(5L))).thenReturn(List.of(producto(5L, 10, false)));
+        when(productoStock.bloquearParaDescuento(List.of(5L))).thenReturn(List.of(producto(5L, 10, false)));
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> service.validarYDescontarStock(
@@ -137,7 +133,7 @@ class ConsumoStockServiceImplTest {
                         List.of(new ConsumoItem(1L, 0)), 7L, 1L, "Uso"));
 
         assertEquals("La cantidad del producto ID 1 debe ser mayor que cero", ex.getMessage());
-        verifyNoInteractions(productoStockMinimo);
+        verifyNoInteractions(productoStock);
         verifyNoInteractions(movimientoInventarioRepository);
     }
 
@@ -147,7 +143,7 @@ class ConsumoStockServiceImplTest {
                 () -> service.validarYDescontarStock(
                         List.of(new ConsumoItem(1L, -5)), 7L, 1L, "Uso"));
 
-        verifyNoInteractions(productoStockMinimo);
+        verifyNoInteractions(productoStock);
     }
 
     @Test
@@ -156,7 +152,7 @@ class ConsumoStockServiceImplTest {
                 () -> service.validarYDescontarStock(List.of(), 7L, 1L, "Uso"));
 
         assertEquals("Debe registrar al menos un producto", ex.getMessage());
-        verifyNoInteractions(productoStockMinimo);
+        verifyNoInteractions(productoStock);
     }
 
     @Test
@@ -164,12 +160,12 @@ class ConsumoStockServiceImplTest {
         assertThrows(IllegalArgumentException.class,
                 () -> service.validarYDescontarStock(null, 7L, 1L, "Uso"));
 
-        verifyNoInteractions(productoStockMinimo);
+        verifyNoInteractions(productoStock);
     }
 
     @Test
     void productoRepetido_validaLaCantidadTotalAntesDeDescontar() {
-        when(productoStockMinimo.consultarPorIds(List.of(1L))).thenReturn(List.of(producto(1L, 5, true)));
+        when(productoStock.bloquearParaDescuento(List.of(1L))).thenReturn(List.of(producto(1L, 5, true)));
 
         StockInsuficienteException ex = assertThrows(StockInsuficienteException.class,
                 () -> service.validarYDescontarStock(
@@ -184,7 +180,7 @@ class ConsumoStockServiceImplTest {
     @Test
     void productoRepetido_conStockSuficiente_descuentaCadaItem() {
         ProductoResponse producto = producto(1L, 5, true);
-        when(productoStockMinimo.consultarPorIds(List.of(1L))).thenReturn(List.of(producto));
+        when(productoStock.bloquearParaDescuento(List.of(1L))).thenReturn(List.of(producto));
         when(productoStock.descontarStock(1L, 2))
                 .thenReturn(new ResultadoStock(producto, 5, 3), new ResultadoStock(producto, 3, 1));
         when(movimientoInventarioRepository.save(any(MovimientoInventario.class)))
@@ -197,5 +193,21 @@ class ConsumoStockServiceImplTest {
         assertEquals(2, movimientos.size());
         assertEquals(3, movimientos.get(1).getStockAnterior());
         assertEquals(1, movimientos.get(1).getStockPosterior());
+    }
+
+    @Test
+    void itemsEnOrdenInverso_bloqueanLosProductosEnOrdenAscendente() {
+        ProductoResponse aceite = producto(1L, 10, true);
+        ProductoResponse filtro = producto(2L, 5, true);
+        when(productoStock.bloquearParaDescuento(List.of(1L, 2L))).thenReturn(List.of(filtro, aceite));
+        when(productoStock.descontarStock(2L, 1)).thenReturn(new ResultadoStock(filtro, 5, 4));
+        when(productoStock.descontarStock(1L, 2)).thenReturn(new ResultadoStock(aceite, 10, 8));
+        when(movimientoInventarioRepository.save(any(MovimientoInventario.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.validarYDescontarStock(
+                List.of(new ConsumoItem(2L, 1), new ConsumoItem(1L, 2)), 7L, 1L, "Uso");
+
+        verify(productoStock).bloquearParaDescuento(List.of(1L, 2L));
     }
 }

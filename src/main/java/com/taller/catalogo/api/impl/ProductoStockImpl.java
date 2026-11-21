@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -23,6 +24,15 @@ public class ProductoStockImpl implements ProductoStock {
     private final ProductoRepository productoRepository;
     private final ProveedorRepository proveedorRepository;
     private final ProductoMapper productoMapper;
+
+    @Override
+    @Transactional
+    public List<ProductoResponse> bloquearParaDescuento(List<Long> productoIds) {
+        List<Long> ordenados = productoIds.stream().distinct().sorted().toList();
+        return productoRepository.findAllByIdInAndActivoTrueForUpdate(ordenados).stream()
+                .map(productoMapper::toResponse)
+                .toList();
+    }
 
     @Override
     @Transactional
