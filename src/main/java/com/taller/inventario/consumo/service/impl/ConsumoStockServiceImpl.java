@@ -1,14 +1,15 @@
 package com.taller.inventario.consumo.service.impl;
 
-import com.taller.auth.entity.Usuario;
-import com.taller.common.exception.StockInsuficienteException;
+import com.taller.catalogo.api.ProductoStock;
+import com.taller.catalogo.api.ProductoStock.ResultadoStock;
+import com.taller.catalogo.api.ProductoStockMinimo;
+import com.taller.compartido.exception.StockInsuficienteException;
 import com.taller.inventario.consumo.domain.ConsumoItem;
 import com.taller.inventario.consumo.service.ConsumoStockService;
 import com.taller.inventario.movimiento.entity.MovimientoInventario;
 import com.taller.inventario.movimiento.enums.TipoMovimiento;
 import com.taller.inventario.movimiento.repository.MovimientoInventarioRepository;
-import com.taller.producto.entity.Producto;
-import com.taller.producto.repository.ProductoRepository;
+import com.taller.catalogo.producto.dto.response.ProductoResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +18,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -28,13 +31,14 @@ public class ConsumoStockServiceImpl implements ConsumoStockService {
     private static final String STOCK_INSUFICIENTE =
             "Stock insuficiente para el producto ID %d (%s): solicitado %d, disponible %d";
 
-    private final ProductoRepository productoRepository;
+    private final ProductoStockMinimo productoStockMinimo;
+    private final ProductoStock productoStock;
     private final MovimientoInventarioRepository movimientoInventarioRepository;
 
     @Override
     @Transactional
     public List<MovimientoInventario> validarYDescontarStock(List<ConsumoItem> items,
-                                                             Usuario usuario,
+                                                             Long usuarioId,
                                                              Long consumoId,
                                                              String motivo) {
         validarCantidades(items);
@@ -44,19 +48,14 @@ public class ConsumoStockServiceImpl implements ConsumoStockService {
 
         List<MovimientoInventario> movimientos = new ArrayList<>();
         for (ConsumoItem item : items) {
-            Producto producto = productoRepository.findByIdAndActivoTrueForUpdate(item.productoId())
-                    .orElseThrow(() -> new IllegalArgumentException(
-                            PRODUCTO_NO_DISPONIBLE.formatted(item.productoId())));
-
-            int stockAnterior = producto.getStockActual();
-            producto.descontarStock(item.cantidad());
+            ResultadoStock resultado = productoStock.descontarStock(item.productoId(), item.cantidad());
 
             MovimientoInventario movimiento = new MovimientoInventario(
                     TipoMovimiento.CONSUMO,
-                    producto,
-                    usuario,
-                    stockAnterior,
-                    producto.getStockActual(),
+                    item.productoId(),
+                    usuarioId,
+                    resultado.stockAnterior(),
+                    resultado.stockPosterior(),
                     null,
                     motivo);
             movimiento.setCantidad(item.cantidad());
@@ -95,17 +94,22 @@ public class ConsumoStockServiceImpl implements ConsumoStockService {
     }
 
     private void validarDisponibilidad(Map<Long, Integer> cantidadesPorProducto) {
+        Map<Long, ProductoResponse> porId = productoStockMinimo
+                .consultarPorIds(new ArrayList<>(cantidadesPorProducto.keySet())).stream()
+                .collect(Collectors.toMap(ProductoResponse::id, Function.identity()));
+
         for (Map.Entry<Long, Integer> entry : cantidadesPorProducto.entrySet()) {
             Long productoId = entry.getKey();
-            Producto producto = productoRepository.findById(productoId)
-                    .filter(Producto::isActivo)
-                    .orElseThrow(() -> new IllegalArgumentException(PRODUCTO_NO_DISPONIBLE.formatted(productoId)));
+            ProductoResponse producto = porId.get(productoId);
+            if (producto == null || !producto.activo()) {
+                throw new IllegalArgumentException(PRODUCTO_NO_DISPONIBLE.formatted(productoId));
+            }
 
             int solicitado = entry.getValue();
-            int disponible = producto.getStockActual();
+            int disponible = producto.stockActual();
             if (disponible < solicitado) {
                 throw new StockInsuficienteException(
-                        STOCK_INSUFICIENTE.formatted(productoId, producto.getNombre(), solicitado, disponible));
+                        STOCK_INSUFICIENTE.formatted(productoId, producto.nombre(), solicitado, disponible));
             }
         }
     }

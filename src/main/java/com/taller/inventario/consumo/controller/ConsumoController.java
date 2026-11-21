@@ -1,6 +1,6 @@
 package com.taller.inventario.consumo.controller;
 
-import com.taller.auth.entity.Usuario;
+import com.taller.seguridad.api.ActorAutenticado;
 import com.taller.inventario.consumo.dto.request.ConsumoRequest;
 import com.taller.inventario.consumo.dto.response.ConsumoResponse;
 import com.taller.inventario.consumo.service.ConsumoService;
@@ -25,8 +25,8 @@ public class ConsumoController {
     @PostMapping
     @PreAuthorize("hasAnyRole('MECANICO', 'JEFE_TALLER')")
     public ResponseEntity<ConsumoResponse> registrar(@Valid @RequestBody ConsumoRequest request,
-                                                     @AuthenticationPrincipal Usuario usuario) {
+                                                     @AuthenticationPrincipal ActorAutenticado actor) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(consumoService.registrar(request, usuario));
+                .body(consumoService.registrar(request, actor.id()));
     }
 }

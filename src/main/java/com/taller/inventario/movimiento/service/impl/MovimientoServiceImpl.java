@@ -1,8 +1,8 @@
 package com.taller.inventario.movimiento.service.impl;
 
-import com.taller.auth.entity.Usuario;
-import com.taller.catalogo.proveedor.entity.Proveedor;
-import com.taller.catalogo.proveedor.repository.ProveedorRepository;
+import com.taller.catalogo.api.ProductoStock;
+import com.taller.catalogo.api.ProductoStock.ResultadoEntrada;
+import com.taller.catalogo.api.ProductoStock.ResultadoStock;
 import com.taller.inventario.movimiento.dto.request.AjusteRequest;
 import com.taller.inventario.movimiento.dto.request.EntradaRequest;
 import com.taller.inventario.movimiento.dto.response.EntradaResponse;
@@ -11,10 +11,6 @@ import com.taller.inventario.movimiento.entity.MovimientoInventario;
 import com.taller.inventario.movimiento.enums.TipoMovimiento;
 import com.taller.inventario.movimiento.repository.MovimientoInventarioRepository;
 import com.taller.inventario.movimiento.service.MovimientoService;
-import com.taller.producto.entity.Producto;
-import com.taller.producto.exception.ProductoNotFoundException;
-import com.taller.producto.mapper.ProductoMapper;
-import com.taller.producto.repository.ProductoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,14 +19,12 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class MovimientoServiceImpl implements MovimientoService {
 
-    private final ProductoRepository productoRepository;
+    private final ProductoStock productoStock;
     private final MovimientoInventarioRepository movimientoInventarioRepository;
-    private final ProveedorRepository proveedorRepository;
-    private final ProductoMapper productoMapper;
 
     @Override
     @Transactional
-    public MovimientoResponse ajuste(AjusteRequest request, Usuario usuario) {
+    public MovimientoResponse ajuste(AjusteRequest request, Long usuarioId) {
         if (request.cantidadFisica() == null || request.cantidadFisica() < 0) {
             throw new IllegalArgumentException("La cantidad física no puede ser negativa");
         }
@@ -38,19 +32,15 @@ public class MovimientoServiceImpl implements MovimientoService {
             throw new IllegalArgumentException("La justificación es obligatoria");
         }
 
-        Producto producto = productoRepository.findByIdAndActivoTrueForUpdate(request.productoId())
-                .orElseThrow(() -> new ProductoNotFoundException(request.productoId()));
-
-        int stockAnterior = producto.getStockActual();
-        int variacion = request.cantidadFisica() - stockAnterior;
-        producto.setStockActual(request.cantidadFisica());
+        ResultadoStock resultado = productoStock.fijarStock(request.productoId(), request.cantidadFisica());
+        int variacion = request.cantidadFisica() - resultado.stockAnterior();
 
         MovimientoInventario movimiento = new MovimientoInventario(
                 TipoMovimiento.AJUSTE,
-                producto,
-                usuario,
-                stockAnterior,
-                request.cantidadFisica(),
+                request.productoId(),
+                usuarioId,
+                resultado.stockAnterior(),
+                resultado.stockPosterior(),
                 variacion,
                 request.justificacion().trim());
 
@@ -59,7 +49,7 @@ public class MovimientoServiceImpl implements MovimientoService {
 
     @Override
     @Transactional
-    public EntradaResponse entrada(EntradaRequest request, Usuario usuario) {
+    public EntradaResponse entrada(EntradaRequest request, Long usuarioId) {
         if (request.cantidad() == null || request.cantidad() <= 0) {
             throw new IllegalArgumentException("Cantidad debe ser mayor que cero");
         }
@@ -67,34 +57,24 @@ public class MovimientoServiceImpl implements MovimientoService {
             throw new IllegalArgumentException("Costo unitario no puede ser negativo");
         }
 
-        Producto producto = productoRepository.findByIdAndActivoTrueForUpdate(request.productoId())
-                .orElseThrow(() -> new ProductoNotFoundException(request.productoId()));
-        Proveedor proveedor = proveedorRepository.findByIdAndActivoTrue(request.proveedorId())
-                .orElseThrow(() -> new IllegalArgumentException("Proveedor no encontrado o inactivo"));
-
-        int stockAnterior = producto.getStockActual();
-        int stockPosterior;
-        try {
-            stockPosterior = Math.addExact(stockAnterior, request.cantidad());
-        } catch (ArithmeticException e) {
-            throw new IllegalArgumentException("La cantidad excede el stock máximo permitido");
-        }
-
-        producto.setStockActual(stockPosterior);
-        producto.setCostoUltimaCompra(request.costoUnitario());
+        ResultadoEntrada resultado = productoStock.aplicarEntrada(
+                request.productoId(),
+                request.proveedorId(),
+                request.cantidad(),
+                request.costoUnitario());
 
         MovimientoInventario movimiento = new MovimientoInventario(
                 TipoMovimiento.ENTRADA,
-                producto,
-                usuario,
-                stockAnterior,
-                stockPosterior,
+                request.productoId(),
+                usuarioId,
+                resultado.stockAnterior(),
+                resultado.stockPosterior(),
                 request.cantidad(),
-                "Entrada de proveedor " + proveedor.getRazonSocial());
+                resultado.motivo());
         movimiento.setCantidad(request.cantidad());
         movimiento.setCostoUnitario(request.costoUnitario());
 
         MovimientoInventario guardado = movimientoInventarioRepository.save(movimiento);
-        return new EntradaResponse(MovimientoResponse.from(guardado), productoMapper.toResponse(producto));
+        return new EntradaResponse(MovimientoResponse.from(guardado), resultado.producto());
     }
 }

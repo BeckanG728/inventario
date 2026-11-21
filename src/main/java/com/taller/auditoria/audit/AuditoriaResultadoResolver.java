@@ -1,6 +1,6 @@
 package com.taller.auditoria.audit;
 
-import com.taller.common.error.ErrorPolicyResolver;
+import com.taller.compartido.error.ErrorPolicyResolver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

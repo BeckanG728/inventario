@@ -1,5 +1,6 @@
 package com.taller.inventario.movimiento.dto.response;
 
+import com.taller.inventario.api.MovimientoDetalle;
 import com.taller.inventario.movimiento.entity.MovimientoInventario;
 import com.taller.inventario.movimiento.enums.TipoMovimiento;
 
@@ -32,8 +33,24 @@ public record MovimientoResponse(
                 movimiento.getStockPosterior(),
                 movimiento.getCostoUnitario(),
                 movimiento.getMotivo(),
-                movimiento.getProducto().getId(),
+                movimiento.getProductoId(),
                 movimiento.getConsumoId(),
-                movimiento.getUsuario().getId());
+                movimiento.getUsuarioId());
+    }
+
+    public static MovimientoResponse from(MovimientoDetalle movimiento) {
+        return new MovimientoResponse(
+                movimiento.id(),
+                movimiento.fecha(),
+                movimiento.tipo(),
+                movimiento.cantidad(),
+                movimiento.variacion(),
+                movimiento.stockAnterior(),
+                movimiento.stockPosterior(),
+                movimiento.costoUnitario(),
+                movimiento.motivo(),
+                movimiento.productoId(),
+                movimiento.consumoId(),
+                movimiento.usuarioId());
     }
 }

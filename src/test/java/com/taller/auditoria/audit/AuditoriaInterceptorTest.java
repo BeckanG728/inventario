@@ -1,7 +1,6 @@
 package com.taller.auditoria.audit;
 
-import com.taller.auth.entity.Rol;
-import com.taller.auth.entity.Usuario;
+import com.taller.seguridad.api.ActorAutenticado;
 import com.taller.auditoria.enums.AuditoriaTipo;
 import com.taller.auditoria.event.OperacionAuditadaEvent;
 import org.junit.jupiter.api.AfterEach;
@@ -11,7 +10,10 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -35,12 +37,12 @@ class AuditoriaInterceptorTest {
         SecurityContextHolder.clearContext();
     }
 
-    private Usuario usuarioAutenticado() {
-        Usuario usuario = new Usuario("mecanico", "pwd", new Rol("MECANICO"));
-        usuario.setId(42L);
+    private ActorAutenticado usuarioAutenticado() {
+        ActorAutenticado actor = new ActorAutenticado(
+                42L, "mecanico", List.of(new SimpleGrantedAuthority("ROLE_MECANICO")));
         SecurityContextHolder.getContext().setAuthentication(
-                UsernamePasswordAuthenticationToken.authenticated(usuario, null, usuario.getAuthorities()));
-        return usuario;
+                UsernamePasswordAuthenticationToken.authenticated(actor, null, actor.authorities()));
+        return actor;
     }
 
     private MockHttpServletRequest peticion(String metodo, String uri) {

@@ -1,6 +1,5 @@
 package com.taller.inventario.consumo.service.impl;
 
-import com.taller.auth.entity.Usuario;
 import com.taller.inventario.consumo.domain.ConsumoItem;
 import com.taller.inventario.consumo.dto.request.ConsumoRequest;
 import com.taller.inventario.consumo.dto.response.ConsumoResponse;
@@ -27,17 +26,18 @@ public class ConsumoServiceImpl implements ConsumoService {
 
     @Override
     @Transactional
-    public ConsumoResponse registrar(ConsumoRequest request, Usuario usuario) {
+    public ConsumoResponse registrar(ConsumoRequest request, Long usuarioId) {
         String finalidad = request.finalidad().trim();
         Consumo consumo = consumoRepository.save(new Consumo(
-                Instant.now(clock), finalidad, normalizarReferencia(request.referenciaVehiculoCliente()), usuario));
+                Instant.now(clock), finalidad, normalizarReferencia(request.referenciaVehiculoCliente()),
+                usuarioId));
 
         List<ConsumoItem> items = request.items().stream()
                 .map(item -> new ConsumoItem(item.productoId(), item.cantidad()))
                 .toList();
 
         List<MovimientoInventario> movimientos = consumoStockService.validarYDescontarStock(
-                items, usuario, consumo.getId(), finalidad);
+                items, usuarioId, consumo.getId(), finalidad);
 
         return ConsumoResponse.from(consumo, movimientos);
     }

@@ -83,7 +83,7 @@ La misma situación se reporta distinto según el endpoint. Esta tabla coincide 
 
 | Situación                                        | Endpoint                                                                                                  | Respuesta                 |
 |--------------------------------------------------|-----------------------------------------------------------------------------------------------------------|---------------------------|
-| Producto inexistente                             | `PUT /api/productos/{id}`, `PUT /api/productos/{id}/stock-minimo`, `PATCH /api/productos/{id}/desactivar` | 404 `NOT_FOUND`           |
+| Producto inexistente                             | `PUT /api/productos/{id}`, `PUT /api/stock/producto/{id}/minimo`, `PATCH /api/productos/{id}/desactivar` | 404 `NOT_FOUND`           |
 | Producto inexistente o inactivo                  | `POST /api/movimientos/entrada`, `POST /api/movimientos/ajuste`                                           | 404 `NOT_FOUND`           |
 | Producto inexistente                             | `GET /api/existencias`                                                                                    | 404 `NOT_FOUND`           |
 | Producto inactivo                                | `GET /api/existencias`                                                                                    | 400 `VALIDATION_ERROR`    |
@@ -94,5 +94,5 @@ La misma situación se reporta distinto según el endpoint. Esta tabla coincide 
 | Nombre de categoría o RUC de proveedor duplicado | `POST /api/categorias`, `POST /api/proveedores`                                                           | 409 `DUPLICATE_RESOURCE`  |
 | Username duplicado                               | `POST /api/auth/register`                                                                                 | 409 `USER_ALREADY_EXISTS` |
 
-Los tres endpoints de producto por `id` (`PUT`, `PUT stock-minimo`, `PATCH desactivar`) buscan el producto sin filtrar
+Los tres endpoints por `id` (`PUT /api/productos/{id}`, `PUT /api/stock/producto/{id}/minimo`, `PATCH desactivar`) buscan el producto sin filtrar
 por `activo`, por eso un producto inactivo no devuelve 404 en ellos.

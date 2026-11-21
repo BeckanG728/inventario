@@ -37,13 +37,13 @@ y [REQUISITOS_FUNCIONALES.md](REQUISITOS_FUNCIONALES.md).
 | Productos       | POST   | `/api/productos`                     |  ❌   |     ✅      |    ❌    |    —    |
 | Productos       | GET    | `/api/productos`                     |  ❌   |     ✅      |    ✅    |    —    |
 | Productos       | PUT    | `/api/productos/{id}`                |  ❌   |     ✅      |    ❌    |    —    |
-| Productos       | PUT    | `/api/productos/{id}/stock-minimo`   |  ❌   |     ✅      |    ❌    |    —    |
+| Productos       | PUT    | `/api/stock/producto/{id}/minimo`   |  ❌   |     ✅      |    ❌    |    —    |
 | Productos       | PATCH  | `/api/productos/{id}/desactivar`     |  ❌   |     ✅      |    ❌    |    —    |
 | Inventario      | GET    | `/api/existencias`                   |  ❌   |     ✅      |    ✅    |    —    |
 | Inventario      | POST   | `/api/movimientos/entrada`           |  ❌   |     ✅      |    ❌    |    —    |
 | Inventario      | POST   | `/api/movimientos/ajuste`            |  ❌   |     ✅      |    ❌    |    —    |
 | Inventario      | POST   | `/api/consumos`                      |  ❌   |     ✅      |    ✅    |    —    |
-| Alertas         | GET    | `/api/alertas`                       |  ❌   |     ✅      |    ✅    |    —    |
+| Alertas         | GET    | `/api/stock/alertas`                       |  ❌   |     ✅      |    ✅    |    —    |
 | Dashboard       | GET    | `/api/dashboard`                     |  ❌   |     ✅      |    ❌    |    —    |
 | Reportes        | GET    | `/api/reportes/movimientos`          |  ❌   |     ✅      |    ❌    |    —    |
 | Reportes        | GET    | `/api/reportes/consumo`              |  ❌   |     ✅      |    ❌    |    —    |
@@ -467,7 +467,7 @@ Actualiza un producto completo.
 
 ---
 
-### 5.4 PUT `/api/productos/{id}/stock-minimo`
+### 5.4 PUT `/api/stock/producto/{id}/minimo`
 
 Actualiza únicamente el stock mínimo.
 
@@ -743,7 +743,7 @@ del reloj del servidor.
 
 ## 7. Dominio: Alertas
 
-### 7.1 GET `/api/alertas`
+### 7.1 GET `/api/stock/alertas`
 
 Lista los productos activos con bajo stock (`stockActual <= stockMinimo`), ordenados por cantidad sugerida descendente y
 luego por nombre.
