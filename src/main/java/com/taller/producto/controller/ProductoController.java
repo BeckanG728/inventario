@@ -2,6 +2,7 @@ package com.taller.producto.controller;
 
 import com.taller.common.dto.PaginaResponse;
 import com.taller.producto.dto.request.CreateProductoRequest;
+import com.taller.producto.dto.request.ProductoFiltro;
 import com.taller.producto.dto.request.StockMinimoRequest;
 import com.taller.producto.dto.request.UpdateProductoRequest;
 import com.taller.producto.dto.response.ProductoResponse;
@@ -37,8 +38,15 @@ public class ProductoController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String nombre,
-            @RequestParam(required = false) Long categoria) {
-        return ResponseEntity.ok(PaginaResponse.from(productoService.listar(page, size, nombre, categoria)));
+            @RequestParam(required = false) Long categoria,
+            @RequestParam(required = false) String codigo,
+            @RequestParam(required = false) Long proveedor,
+            @RequestParam(required = false) String unidadMedida,
+            @RequestParam(required = false) Boolean activo,
+            @RequestParam(required = false) Boolean stockCritico) {
+        ProductoFiltro filtro = new ProductoFiltro(
+                nombre, categoria, codigo, proveedor, unidadMedida, activo, stockCritico);
+        return ResponseEntity.ok(PaginaResponse.from(productoService.listar(page, size, filtro)));
     }
 
     @PutMapping("/{id}")
