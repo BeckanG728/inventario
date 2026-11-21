@@ -1,10 +1,11 @@
-package com.taller.producto.controller;
+package com.taller.catalogo.producto.controller;
 
-import com.taller.compartido.dto.PaginaResponse;
 import com.taller.catalogo.producto.dto.request.CreateProductoRequest;
+import com.taller.catalogo.producto.dto.request.ProductoFiltro;
 import com.taller.catalogo.producto.dto.request.UpdateProductoRequest;
 import com.taller.catalogo.producto.dto.response.ProductoResponse;
 import com.taller.catalogo.producto.service.ProductoService;
+import com.taller.compartido.dto.PaginaResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

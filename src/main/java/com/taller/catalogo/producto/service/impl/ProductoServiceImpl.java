@@ -7,6 +7,7 @@ import com.taller.catalogo.proveedor.repository.ProveedorRepository;
 import com.taller.compartido.exception.DuplicateResourceException;
 import com.taller.inventario.api.HistorialMovimientos;
 import com.taller.catalogo.producto.dto.request.CreateProductoRequest;
+import com.taller.catalogo.producto.dto.request.ProductoFiltro;
 import com.taller.catalogo.producto.dto.request.UpdateProductoRequest;
 import com.taller.catalogo.producto.dto.response.ProductoResponse;
 import com.taller.catalogo.producto.entity.Producto;

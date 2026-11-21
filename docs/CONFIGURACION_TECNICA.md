@@ -52,7 +52,7 @@ La aplicación no arranca si:
 - Cualquiera de las variables `RATE_LIMIT_*` es nula o menor que 1 (`@Validated` en `RateLimitProperties`).
 
 En esos casos se lanza una `IllegalStateException` con un mensaje que comienza por `FATAL`. La validación se ejecuta
-al inicializar la configuración (`AppConfig`, `@PostConstruct`). Origen: RN116.
+al inicializar la configuración (`SeguridadProperties`, `@PostConstruct`). Origen: RN116.
 
 ### 2.2 Usuario semilla
 
@@ -125,17 +125,17 @@ negocio del stock inicial.
 
 | Decisión | Descripción |
 |----------|-------------|
-| Organización por dominio | Paquetes `auth`, `catalogo`, `producto`, `movimiento`, `consumo`, `existencia`, `alerta`, `dashboard` y `reporte`. |
-| Separación por capas | Controladores, servicios, repositorios, DTO y entidades; los controladores delegan la lógica en servicios. |
+| Organización por dominio | Paquetes `catalogo`, `inventario`, `controlstock`, `reportes`, `seguridad` y `auditoria`, más `compartido`, `configuracion` e `inicializacion`. |
+| Organización interna | Cada dominio agrupa sus capacidades (por ejemplo `seguridad/autenticacion`, `seguridad/usuario`, `reportes/consulta`, `reportes/exportacion`, `controlstock/alerta`, `controlstock/stockminimo`) y dentro de ellas separa controlador, servicio, DTO, entidad y repositorio según corresponda. |
 | Lógica pura | `ValorInventarioCalculator`, `EstadisticasBucketing` y `BajoStockAgrupador` no dependen de Spring ni de la base de datos. |
 | Mapeo | `ProductoMapper` (MapStruct) construye las respuestas de producto, incluido `stockCritico`. |
 | Seguridad sin estado | Filtro JWT antes del filtro de autenticación de Spring; CSRF deshabilitado; sesiones `STATELESS`. |
 | Rate limiting | `LoginRateLimitFilter` antes de `JwtAuthFilter` (IP y username) y `UsuarioRateLimitFilter` después (usuario de la BD). Estado en memoria detrás de `RateLimitStore`. |
-| Manejo de errores | `ErrorCode` y `common/error` unifican el contrato para `GlobalExceptionHandler`, `ErrorResponseWriter`, seguridad, rate limiting y auditoría; ver [TABLA_ERRORES.md](TABLA_ERRORES.md). |
+| Manejo de errores | `ErrorCode` y `compartido/error` unifican el contrato para `GlobalExceptionHandler`, `ErrorResponseWriter`, seguridad, rate limiting y auditoría; ver [TABLA_ERRORES.md](TABLA_ERRORES.md). |
 | Prefijo de API | `/api`; respuestas JSON; fechas `Instant` en UTC. |
 
 ## 8. Verificación
 
-La configuración se contrastó estáticamente con `application.yaml`, `AppConfig`, `ClockConfig`, `JacksonConfig`,
+La configuración se contrastó estáticamente con `application.yaml`, `SeguridadProperties`, `ClockConfig`, `JacksonConfig`,
 `SchedulingConfig`, `AlertaScheduler`, `SecurityConfig`, `JwtUtil`, `JwtAuthFilter`, las entidades y los servicios.
 No se ejecutaron compilaciones ni pruebas de runtime.

@@ -4,7 +4,6 @@ import com.taller.catalogo.producto.entity.Producto;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.Locale;
-import org.springframework.data.jpa.domain.Specification;
 
 public final class ProductoSpecification {
 

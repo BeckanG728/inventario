@@ -388,14 +388,19 @@ Lista productos con paginación y filtros opcionales.
 - **Acceso:** `JEFE_TALLER`, `MECANICO`
 - **Parámetros de URL:**
 
-| Parámetro   | Tipo    | Obligatorio | Default | Descripción                                            |
-|-------------|---------|-------------|---------|--------------------------------------------------------|
-| `page`      | integer | No          | `0`     | Número de página (se normaliza a `>= 0`)               |
-| `size`      | integer | No          | `10`    | Tamaño de página (se limita a 1–100)                   |
-| `nombre`    | string  | No          | —       | Búsqueda parcial por nombre, sin distinguir mayúsculas |
-| `categoria` | integer | No          | —       | Filtra por ID de categoría                             |
+| Parámetro      | Tipo    | Obligatorio | Default | Descripción                                                |
+|----------------|---------|-------------|---------|------------------------------------------------------------|
+| `page`         | integer | No          | `0`     | Número de página (se normaliza a `>= 0`)                   |
+| `size`         | integer | No          | `10`    | Tamaño de página (se limita a 1–100)                       |
+| `nombre`       | string  | No          | —       | Búsqueda parcial por nombre, sin distinguir mayúsculas     |
+| `categoria`    | integer | No          | —       | Filtra por ID de categoría                                 |
+| `codigo`       | string  | No          | —       | Búsqueda parcial por código, sin distinguir mayúsculas     |
+| `proveedor`    | integer | No          | —       | Filtra por ID de proveedor                                 |
+| `unidadMedida` | string  | No          | —       | Filtra por unidad de medida (comparación sin mayúsculas)   |
+| `activo`       | boolean | No          | —       | Filtra por estado activo                                   |
+| `stockCritico` | boolean | No          | —       | `true` si `stockActual <= stockMinimo`; `false` en caso contrario |
 
-- **Ejemplo:** `GET /api/productos?page=0&size=10&nombre=filtro&categoria=3`
+- **Ejemplo:** `GET /api/productos?page=0&size=10&nombre=filtro&categoria=3&stockCritico=true`
 - **Respuesta 200 OK:** `content` (lista de `ProductoResponse`) más cuatro campos de paginación.
 
 ```json
