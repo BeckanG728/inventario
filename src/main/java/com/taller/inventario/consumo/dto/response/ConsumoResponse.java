@@ -22,7 +22,7 @@ public record ConsumoResponse(
                 consumo.getFecha(),
                 consumo.getFinalidad(),
                 consumo.getReferenciaVehiculoCliente(),
-                consumo.getUsuario().getId(),
+                consumo.getUsuarioId(),
                 movimientos.stream().map(MovimientoResponse::from).toList());
     }
 }

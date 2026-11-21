@@ -1,6 +1,6 @@
 package com.taller.inventario.movimiento.controller;
 
-import com.taller.auth.entity.Usuario;
+import com.taller.seguridad.api.ActorAutenticado;
 import com.taller.inventario.movimiento.dto.request.AjusteRequest;
 import com.taller.inventario.movimiento.dto.request.EntradaRequest;
 import com.taller.inventario.movimiento.dto.response.EntradaResponse;
@@ -27,16 +27,16 @@ public class MovimientoController {
     @PostMapping("/ajuste")
     @PreAuthorize("hasRole('JEFE_TALLER')")
     public ResponseEntity<MovimientoResponse> ajuste(@Valid @RequestBody AjusteRequest request,
-                                                     @AuthenticationPrincipal Usuario usuario) {
+                                                     @AuthenticationPrincipal ActorAutenticado actor) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(movimientoService.ajuste(request, usuario));
+                .body(movimientoService.ajuste(request, actor.id()));
     }
 
     @PostMapping("/entrada")
     @PreAuthorize("hasRole('JEFE_TALLER')")
     public ResponseEntity<EntradaResponse> entrada(@Valid @RequestBody EntradaRequest request,
-                                                   @AuthenticationPrincipal Usuario usuario) {
+                                                   @AuthenticationPrincipal ActorAutenticado actor) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(movimientoService.entrada(request, usuario));
+                .body(movimientoService.entrada(request, actor.id()));
     }
 }

@@ -1,6 +1,6 @@
 package com.taller.auditoria.audit;
 
-import com.taller.auth.entity.Usuario;
+import com.taller.auditoria.api.ProveedorActor;
 import com.taller.auditoria.enums.AuditoriaTipo;
 import com.taller.auditoria.event.OperacionAuditadaEvent;
 import jakarta.servlet.http.HttpServletRequest;
@@ -38,9 +38,9 @@ public class AuditoriaInterceptor implements HandlerInterceptor {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Long actorId = null;
         String actorUsername = "sistema";
-        if (auth != null && auth.getPrincipal() instanceof Usuario usuario) {
-            actorId = usuario.getId();
-            actorUsername = usuario.getUsername();
+        if (auth != null && auth.getPrincipal() instanceof ProveedorActor actor) {
+            actorId = actor.actorId();
+            actorUsername = actor.actorUsername();
         } else if (auth != null && auth.isAuthenticated() && auth.getName() != null
                 && !"anonymousUser".equals(auth.getName())) {
             actorUsername = auth.getName();

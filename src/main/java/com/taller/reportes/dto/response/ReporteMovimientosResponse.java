@@ -1,0 +1,12 @@
+package com.taller.reportes.dto.response;
+
+import com.taller.inventario.movimiento.dto.response.MovimientoResponse;
+import java.util.List;
+
+public record ReporteMovimientosResponse(
+        long totalEntradas,
+        long totalConsumos,
+        long totalAjustes,
+        List<MovimientoResponse> movimientos
+) {
+}

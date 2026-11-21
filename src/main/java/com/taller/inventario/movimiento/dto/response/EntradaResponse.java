@@ -1,6 +1,6 @@
 package com.taller.inventario.movimiento.dto.response;
 
-import com.taller.producto.dto.response.ProductoResponse;
+import com.taller.catalogo.producto.dto.response.ProductoResponse;
 
 /**
  * Respuesta de una entrada: el movimiento creado y el nuevo estado del producto.

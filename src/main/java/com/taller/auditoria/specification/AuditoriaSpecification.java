@@ -1,8 +1,9 @@
 package com.taller.auditoria.specification;
 
+import com.taller.compartido.ZonaHorariaNegocio;
+
 import com.taller.auditoria.domain.AuditoriaOperacion;
 import com.taller.auditoria.enums.AuditoriaTipo;
-import com.taller.config.ClockConfig;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDate;
@@ -17,7 +18,7 @@ public final class AuditoriaSpecification {
 
     public static Specification<AuditoriaOperacion> filtros(LocalDate desde, LocalDate hasta,
                                                             String actor, String tipo, String resultado) {
-        ZoneId zona = ClockConfig.ZONA_NEGOCIO;
+        ZoneId zona = ZonaHorariaNegocio.ZONA_NEGOCIO;
         Specification<AuditoriaOperacion> spec = Specification.unrestricted();
 
         if (desde != null) {

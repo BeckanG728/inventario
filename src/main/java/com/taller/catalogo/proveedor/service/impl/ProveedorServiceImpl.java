@@ -6,7 +6,7 @@ import com.taller.catalogo.proveedor.entity.Proveedor;
 import com.taller.catalogo.proveedor.repository.ProveedorRepository;
 import com.taller.catalogo.proveedor.service.ProveedorService;
 import com.taller.catalogo.proveedor.specification.ProveedorSpecification;
-import com.taller.common.exception.DuplicateResourceException;
+import com.taller.compartido.exception.DuplicateResourceException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;

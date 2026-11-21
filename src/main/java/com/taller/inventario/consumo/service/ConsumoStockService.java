@@ -1,6 +1,5 @@
 package com.taller.inventario.consumo.service;
 
-import com.taller.auth.entity.Usuario;
 import com.taller.inventario.consumo.domain.ConsumoItem;
 import com.taller.inventario.movimiento.entity.MovimientoInventario;
 
@@ -14,7 +13,7 @@ public interface ConsumoStockService {
      * suficiente, no se aplica ningún descuento ni se registra ningún movimiento.
      */
     List<MovimientoInventario> validarYDescontarStock(List<ConsumoItem> items,
-                                                      Usuario usuario,
+                                                      Long usuarioId,
                                                       Long consumoId,
                                                       String motivo);
 }

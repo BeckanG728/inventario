@@ -6,7 +6,7 @@ import com.taller.catalogo.categoria.entity.Categoria;
 import com.taller.catalogo.categoria.repository.CategoriaRepository;
 import com.taller.catalogo.categoria.service.CategoriaService;
 import com.taller.catalogo.categoria.specification.CategoriaSpecification;
-import com.taller.common.exception.DuplicateResourceException;
+import com.taller.compartido.exception.DuplicateResourceException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;

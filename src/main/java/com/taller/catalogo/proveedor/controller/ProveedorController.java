@@ -3,7 +3,7 @@ package com.taller.catalogo.proveedor.controller;
 import com.taller.catalogo.proveedor.dto.request.ProveedorRequest;
 import com.taller.catalogo.proveedor.dto.response.ProveedorResponse;
 import com.taller.catalogo.proveedor.service.ProveedorService;
-import com.taller.common.dto.PaginaResponse;
+import com.taller.compartido.dto.PaginaResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

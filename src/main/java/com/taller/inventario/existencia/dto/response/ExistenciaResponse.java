@@ -1,6 +1,6 @@
 package com.taller.inventario.existencia.dto.response;
 
-import com.taller.producto.entity.Producto;
+import com.taller.catalogo.producto.dto.response.ProductoResponse;
 
 public record ExistenciaResponse(
         Long productoId,
@@ -12,13 +12,13 @@ public record ExistenciaResponse(
 ) {
 
     /** RN302: stockCritico cuando stockActual <= stockMinimo. */
-    public static ExistenciaResponse from(Producto producto) {
+    public static ExistenciaResponse from(ProductoResponse producto) {
         return new ExistenciaResponse(
-                producto.getId(),
-                producto.getCodigo(),
-                producto.getNombre(),
-                producto.getStockActual(),
-                producto.getStockMinimo(),
-                producto.getStockActual() <= producto.getStockMinimo());
+                producto.id(),
+                producto.codigo(),
+                producto.nombre(),
+                producto.stockActual(),
+                producto.stockMinimo(),
+                producto.stockActual() <= producto.stockMinimo());
     }
 }

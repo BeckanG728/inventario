@@ -1,14 +1,10 @@
 package com.taller.inventario.consumo.entity;
 
-import com.taller.auth.entity.Usuario;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
@@ -34,17 +30,17 @@ public class Consumo {
     @Column(name = "referencia_vehiculo_cliente", length = 150)
     private String referenciaVehiculoCliente;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "usuario_id", nullable = false)
-    private Usuario usuario;
+    /** Identificador del usuario de seguridad; la FK se conserva en la base de datos. */
+    @Column(name = "usuario_id", nullable = false)
+    private Long usuarioId;
 
     protected Consumo() {
     }
 
-    public Consumo(Instant fecha, String finalidad, String referenciaVehiculoCliente, Usuario usuario) {
+    public Consumo(Instant fecha, String finalidad, String referenciaVehiculoCliente, Long usuarioId) {
         this.fecha = fecha;
         this.finalidad = finalidad;
         this.referenciaVehiculoCliente = referenciaVehiculoCliente;
-        this.usuario = usuario;
+        this.usuarioId = usuarioId;
     }
 }

@@ -2,7 +2,7 @@ package com.taller.auditoria.controller;
 
 import com.taller.auditoria.dto.response.AuditoriaResponse;
 import com.taller.auditoria.service.AuditoriaService;
-import com.taller.common.dto.PaginaResponse;
+import com.taller.compartido.dto.PaginaResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;

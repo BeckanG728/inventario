@@ -48,7 +48,7 @@ responsabilidades operativas dentro de sus módulos.
 - Solo `JEFE_TALLER` registra entradas y ajustes de inventario (`RN201`, `RN209`).
 - `JEFE_TALLER` y `MECANICO` pueden registrar consumos (`RN204`).
 - `ADMIN` registra usuarios y consulta la auditoría, pero no accede a endpoints de negocio (`RN117`).
-- `GET /api/productos`, `GET /api/existencias` y `GET /api/alertas` están disponibles para `JEFE_TALLER` y
+- `GET /api/productos`, `GET /api/existencias` y `GET /api/stock/alertas` están disponibles para `JEFE_TALLER` y
   `MECANICO`; `ADMIN` no accede.
 - `GET /api/dashboard`, `GET /api/reportes/**` (incluidas las exportaciones) y `GET /api/estadisticas` están
   disponibles solo para `JEFE_TALLER`; `ADMIN` y `MECANICO` no acceden.
@@ -72,7 +72,7 @@ responsabilidades operativas dentro de sus módulos.
 | Existencias | `GET /api/existencias` | ❌ | ✅ | ✅ | — |
 | Entradas y ajustes | `POST /api/movimientos/entrada`, `POST /api/movimientos/ajuste` | ❌ | ✅ | ❌ | — |
 | Consumos | `POST /api/consumos` | ❌ | ✅ | ✅ | — |
-| Alertas | `GET /api/alertas` | ❌ | ✅ | ✅ | — |
+| Alertas | `GET /api/stock/alertas` | ❌ | ✅ | ✅ | — |
 | Dashboard | `GET /api/dashboard` | ❌ | ✅ | ❌ | — |
 | Reportes y exportaciones | `GET /api/reportes/**` | ❌ | ✅ | ❌ | — |
 | Estadísticas | `GET /api/estadisticas` | ❌ | ✅ | ❌ | — |

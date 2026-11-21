@@ -1,18 +1,19 @@
 package com.taller.auditoria.audit;
 
-import com.taller.auth.error.AuthErrorPolicy;
-import com.taller.auth.exception.InvalidCredentialsException;
-import com.taller.auth.exception.InvalidRoleException;
-import com.taller.auth.exception.UserAlreadyExistsException;
-import com.taller.auth.exception.UsuarioNotFoundException;
-import com.taller.common.error.DominioErrorPolicy;
-import com.taller.common.error.ErrorPolicyResolver;
-import com.taller.common.error.GenericErrorPolicy;
-import com.taller.common.error.WebErrorPolicy;
-import com.taller.common.exception.DuplicateResourceException;
-import com.taller.common.exception.StockInsuficienteException;
-import com.taller.producto.error.ProductoErrorPolicy;
-import com.taller.producto.exception.ProductoNotFoundException;
+import com.taller.seguridad.error.AuthErrorPolicy;
+import com.taller.seguridad.exception.InvalidCredentialsException;
+import com.taller.seguridad.exception.InvalidRoleException;
+import com.taller.seguridad.exception.UserAlreadyExistsException;
+import com.taller.seguridad.exception.UsuarioNotFoundException;
+import com.taller.catalogo.error.CatalogoErrorPolicy;
+import com.taller.inventario.error.InventarioErrorPolicy;
+import com.taller.compartido.error.ErrorPolicyResolver;
+import com.taller.compartido.error.FrameworkErrorPolicy;
+import com.taller.compartido.error.WebErrorPolicy;
+import com.taller.compartido.exception.DuplicateResourceException;
+import com.taller.compartido.exception.StockInsuficienteException;
+import com.taller.catalogo.producto.error.ProductoErrorPolicy;
+import com.taller.catalogo.producto.exception.ProductoNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpMethod;
@@ -34,9 +35,10 @@ class AuditoriaResultadoResolverTest {
     private final ErrorPolicyResolver errores = new ErrorPolicyResolver(List.of(
             new AuthErrorPolicy(),
             new ProductoErrorPolicy(),
-            new DominioErrorPolicy(),
+            new CatalogoErrorPolicy(),
+            new InventarioErrorPolicy(),
             new WebErrorPolicy(),
-            new GenericErrorPolicy()));
+            new FrameworkErrorPolicy()));
     private final AuditoriaResultadoResolver resolver = new AuditoriaResultadoResolver(errores);
 
     @Test
