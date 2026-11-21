@@ -95,13 +95,15 @@ consultar (ver [REQUISITOS_FUNCIONALES.md](REQUISITOS_FUNCIONALES.md)).
 | Operaciones de escritura | Servicios anotados con `@Transactional` | RN203, RN207 |
 | Consultas y reportes | Servicios de lectura anotados con `@Transactional(readOnly = true)` | RN408 |
 | Atomicidad del consumo | La validación y el descuento de todos los ítems se ejecutan en una misma transacción | RN207 |
-| Bloqueo de fila | `findByIdAndActivoTrueForUpdate` con `LockModeType.PESSIMISTIC_WRITE` al descontar stock o ajustar | RN207, RN209 |
+| Bloqueo de fila | `findAllByIdInAndActivoTrueForUpdate` con `LockModeType.PESSIMISTIC_WRITE` y `order by p.id` adquiere todas las filas de un consumo en orden ascendente de id antes de descontar; `findByIdAndActivoTrueForUpdate` sigue usándose en entradas y ajustes | RN207, RN209 |
 | Agrupación de ítems repetidos | Las cantidades del mismo producto se suman antes de validar disponibilidad | RN206, RN207 |
 | Desbordamiento | `Math.addExact` / `Math.subtractExact` detectan el desbordamiento del entero y la operación se rechaza | RN211 |
 | No negatividad | `Producto.descontarStock` verifica que el stock resultante no sea negativo | RN206 |
 
-El bloqueo de fila y la transacción garantizan que no se produzcan descuentos parciales ni condiciones de carrera
-en el consumo concurrente del mismo producto.
+La validación de disponibilidad se hace contra el estado devuelto por la consulta bloqueada, no contra una entidad
+precargada sin bloqueo en el `PersistenceContext`. Todas las filas se bloquean en orden ascendente de id en una sola
+sentencia, de modo que dos consumos concurrentes con los mismos productos en orden inverso no forman un ciclo de
+espera. La transacción garantiza que no se produzcan descuentos parciales.
 
 ## 6. Persistencia y modelo de datos
 

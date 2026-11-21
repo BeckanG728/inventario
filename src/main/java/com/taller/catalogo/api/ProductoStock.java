@@ -3,6 +3,7 @@ package com.taller.catalogo.api;
 import com.taller.catalogo.producto.dto.response.ProductoResponse;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * Operaciones de stock que el catálogo ofrece a otros dominios.
@@ -29,6 +30,14 @@ public interface ProductoStock {
             String motivo
     ) {
     }
+
+    /**
+     * Bloquea en una sola sentencia todos los productos indicados, en orden ascendente de id,
+     * y devuelve su estado real de base de datos. Evita interbloqueos cuando dos consumos
+     * llegan con los mismos productos en orden inverso y evita validar contra una entidad
+     * obsoleta del PersistenceContext.
+     */
+    List<ProductoResponse> bloquearParaDescuento(List<Long> productoIds);
 
     ResultadoStock descontarStock(Long productoId, int cantidad);
 
