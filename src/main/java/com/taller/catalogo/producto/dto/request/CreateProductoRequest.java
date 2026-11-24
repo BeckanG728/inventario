@@ -9,10 +9,6 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 public record CreateProductoRequest(
-        @NotBlank(message = "El código es obligatorio")
-        @Size(max = 50, message = "El código no puede superar los 50 caracteres")
-        String codigo,
-
         @NotBlank(message = "El nombre es obligatorio")
         @Size(max = 150, message = "El nombre no puede superar los 150 caracteres")
         String nombre,

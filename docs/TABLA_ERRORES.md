@@ -51,7 +51,7 @@ Todos los errores controlados (excepciones de dominio, validación y seguridad) 
 | 404  | `NOT_FOUND`                | `NoResourceFoundException`                                                  | Ruta inexistente (con token válido; sin token responde 401)                      |
 | 409  | `USER_ALREADY_EXISTS`      | `UserAlreadyExistsException`                                                | Username ya registrado                                                           |
 | 409  | `ULTIMO_ADMIN_ACTIVO`      | `UltimoAdminActivoException`                                                | Intento de desactivar o cambiar el rol del último `ADMIN` activo                 |
-| 409  | `DUPLICATE_RESOURCE`       | `DuplicateResourceException`                                                | Producto con `codigo` repetido, categoría con nombre repetido (sin distinguir mayúsculas) o proveedor con RUC repetido |
+| 409  | `DUPLICATE_RESOURCE`       | `DuplicateResourceException`                                                | Categoría con nombre repetido (sin distinguir mayúsculas) o proveedor con RUC repetido |
 | 409  | `DATA_INTEGRITY_VIOLATION` | `DataIntegrityViolationException`                                           | Violación de restricción de base de datos                                        |
 | 409  | `STOCK_INSUFICIENTE`       | `StockInsuficienteException`                                                | Consumo o descuento que dejaría el stock negativo                                |
 | 405  | `METHOD_NOT_ALLOWED`       | `HttpRequestMethodNotSupportedException`                                    | Método HTTP no soportado para la ruta (incluye cabecera `Allow`)                 |
@@ -62,7 +62,7 @@ Todos los errores controlados (excepciones de dominio, validación y seguridad) 
 Notas:
 
 - Un `ProductoNotFoundException` con producto inactivo se lanza en `entrada`, `ajuste` (búsqueda con `activo = true`).
-  En `GET /api/existencias` un producto inactivo devuelve `400 VALIDATION_ERROR`, no 404.
+  `GET /api/monitoreo/existencias` solo lista productos activos: los inactivos simplemente no aparecen, no generan error.
 - En login, cualquier `AuthenticationException` de Spring (incluida cuenta deshabilitada) se convierte en
   `401 INVALID_CREDENTIALS`. `ACCOUNT_DISABLED` solo se emite desde el filtro JWT.
 - Los errores de seguridad (401 y 403) y los de limitación (429) los escribe `ErrorResponseWriter` con el mismo contrato.
@@ -83,10 +83,8 @@ La misma situación se reporta distinto según el endpoint. Esta tabla coincide 
 
 | Situación                                        | Endpoint                                                                                                  | Respuesta                 |
 |--------------------------------------------------|-----------------------------------------------------------------------------------------------------------|---------------------------|
-| Producto inexistente                             | `PUT /api/productos/{id}`, `PUT /api/stock/producto/{id}/minimo`, `PATCH /api/productos/{id}/desactivar` | 404 `NOT_FOUND`           |
+| Producto inexistente                             | `PUT /api/productos/{id}`, `PUT /api/productos/{id}/stock-minimo`, `PATCH /api/productos/{id}/desactivar` | 404 `NOT_FOUND`           |
 | Producto inexistente o inactivo                  | `POST /api/movimientos/entrada`, `POST /api/movimientos/ajuste`                                           | 404 `NOT_FOUND`           |
-| Producto inexistente                             | `GET /api/existencias`                                                                                    | 404 `NOT_FOUND`           |
-| Producto inactivo                                | `GET /api/existencias`                                                                                    | 400 `VALIDATION_ERROR`    |
 | Producto inexistente o inactivo                  | `POST /api/consumos`                                                                                      | 400 `VALIDATION_ERROR`    |
 | Categoría o proveedor inexistente o inactivo     | `POST /api/productos`, `PUT /api/productos/{id}`                                                          | 400 `VALIDATION_ERROR`    |
 | Proveedor inexistente o inactivo                 | `POST /api/movimientos/entrada`                                                                           | 400 `VALIDATION_ERROR`    |
@@ -94,5 +92,5 @@ La misma situación se reporta distinto según el endpoint. Esta tabla coincide 
 | Nombre de categoría o RUC de proveedor duplicado | `POST /api/categorias`, `POST /api/proveedores`                                                           | 409 `DUPLICATE_RESOURCE`  |
 | Username duplicado                               | `POST /api/auth/register`                                                                                 | 409 `USER_ALREADY_EXISTS` |
 
-Los tres endpoints por `id` (`PUT /api/productos/{id}`, `PUT /api/stock/producto/{id}/minimo`, `PATCH desactivar`) buscan el producto sin filtrar
+Los tres endpoints por `id` (`PUT /api/productos/{id}`, `PUT /api/productos/{id}/stock-minimo`, `PATCH desactivar`) buscan el producto sin filtrar
 por `activo`, por eso un producto inactivo no devuelve 404 en ellos.

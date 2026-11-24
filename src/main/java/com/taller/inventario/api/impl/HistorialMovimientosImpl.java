@@ -78,6 +78,18 @@ public class HistorialMovimientosImpl implements HistorialMovimientos {
 
     @Override
     @Transactional(readOnly = true)
+    public List<FechaTipo> consultarFechaTipoEntre(Instant desde, Instant hasta, Long productoId) {
+        List<MovimientoReporteRepository.FechaTipo> filas = productoId == null
+                ? movimientoReporteRepository.findFechaTipoBetween(desde, hasta)
+                : movimientoReporteRepository.findFechaTipoBetweenAndProducto(desde, hasta, productoId);
+        return filas.stream()
+                .map(f -> new FechaTipo(f.getFecha(), f.getTipo(), f.getCantidad(), f.getVariacion(),
+                        f.getCostoUnitario()))
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<MovimientoDetalle> consultarConsumosEntre(Instant desde, Instant hasta) {
         return aDetalle(movimientoReporteRepository.findMovimientosConDetalleBetweenAndTipo(
                 desde, hasta, TipoMovimiento.CONSUMO));

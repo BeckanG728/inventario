@@ -44,6 +44,8 @@ public class MovimientoServiceImpl implements MovimientoService {
                 variacion,
                 request.justificacion().trim());
 
+        // RN208: se conserva el costo vigente también en los ajustes, para trazabilidad.
+        movimiento.setCostoUnitario(resultado.producto().costoUltimaCompra());
         return MovimientoResponse.from(movimientoInventarioRepository.save(movimiento));
     }
 

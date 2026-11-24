@@ -1,25 +1,19 @@
 package com.taller.reportes.exportacion.service.impl;
 
-import com.taller.inventario.movimiento.dto.response.MovimientoResponse;
-import com.taller.inventario.movimiento.enums.TipoMovimiento;
-import com.taller.reportes.dto.response.ProductoBajoStock;
-import com.taller.reportes.dto.response.ProveedorBajoStock;
-import com.taller.reportes.dto.response.ReporteConsumoItem;
-import com.taller.reportes.dto.response.ReporteMovimientosResponse;
+import com.taller.reportes.dto.response.ValorInventarioDetalle;
+import com.taller.reportes.dto.response.ValorInventarioResponse;
 import com.taller.reportes.exportacion.enums.FormatoReporte;
 import com.taller.reportes.exportacion.export.ReporteExcelExporter;
 import com.taller.reportes.exportacion.export.ReportePdfExporter;
-import org.junit.jupiter.api.Test;
-
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.util.List;
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * US-21 — Exportación de reportes a PDF y Excel.
+ * US-21 — Exportación del reporte de valor de inventario a PDF y Excel.
  */
 class ReporteExportServiceImplTest {
 
@@ -28,79 +22,37 @@ class ReporteExportServiceImplTest {
     private final ReporteExportServiceImpl service = new ReporteExportServiceImpl(
             new ReportePdfExporter(), new ReporteExcelExporter());
 
-    private ReporteMovimientosResponse reporteMovimientos() {
-        MovimientoResponse movimiento = new MovimientoResponse(
-                1L, Instant.parse("2026-01-10T10:00:00Z"), TipoMovimiento.ENTRADA,
-                5, null, 0, 5, new BigDecimal("12.50"), "Compra", 1L, null, 2L);
-        return new ReporteMovimientosResponse(1, 0, 0, List.of(movimiento));
-    }
-
-    private List<ReporteConsumoItem> reporteConsumo() {
-        return List.of(new ReporteConsumoItem(
-                1L, "FILT-01", "Filtro Aceite", "juan",
-                List.of("Cambio de aceite"), 3,
-                List.of(Instant.parse("2026-01-10T10:00:00Z"))));
-    }
-
-    private List<ProveedorBajoStock> reporteBajoStock() {
-        return List.of(new ProveedorBajoStock("Distribuidor Los Pinos", List.of(
-                new ProductoBajoStock("FILT-01", "Filtro Aceite", 2, 10, 8))));
+    private ValorInventarioResponse reporte() {
+        ValorInventarioDetalle detalle = new ValorInventarioDetalle(
+                "FIL-001", "Filtro Aceite", 20,
+                new BigDecimal("8.50"), new BigDecimal("170.00"));
+        return new ValorInventarioResponse(
+                new BigDecimal("170.00"), 1, 0, List.of(detalle));
     }
 
     @Test
-    void exportarMovimientos_pdf_generaArchivoPdf() {
-        byte[] archivo = service.exportarMovimientos(reporteMovimientos(), FormatoReporte.PDF);
+    void exportarValorInventario_pdf_generaArchivoPdf() {
+        byte[] archivo = service.exportarValorInventario(reporte(), FormatoReporte.PDF);
 
         assertTrue(archivo.length > 0);
         assertTrue(contieneFirma(archivo, FIRMA_PDF));
     }
 
     @Test
-    void exportarMovimientos_excel_generaArchivoXlsx() {
-        byte[] archivo = service.exportarMovimientos(reporteMovimientos(), FormatoReporte.EXCEL);
+    void exportarValorInventario_excel_generaArchivoXlsx() {
+        byte[] archivo = service.exportarValorInventario(reporte(), FormatoReporte.EXCEL);
 
         assertTrue(archivo.length > 0);
         assertTrue(esZip(archivo));
     }
 
     @Test
-    void exportarConsumo_pdf_generaArchivoPdf() {
-        byte[] archivo = service.exportarConsumo(reporteConsumo(), FormatoReporte.PDF);
+    void exportarReporteVacio_tambienGeneraArchivosValidos() {
+        ValorInventarioResponse vacio =
+                new ValorInventarioResponse(BigDecimal.ZERO, 0, 0, List.of());
 
-        assertTrue(archivo.length > 0);
-        assertTrue(contieneFirma(archivo, FIRMA_PDF));
-    }
-
-    @Test
-    void exportarConsumo_excel_generaArchivoXlsx() {
-        byte[] archivo = service.exportarConsumo(reporteConsumo(), FormatoReporte.EXCEL);
-
-        assertTrue(archivo.length > 0);
-        assertTrue(esZip(archivo));
-    }
-
-    @Test
-    void exportarBajoStock_pdf_generaArchivoPdf() {
-        byte[] archivo = service.exportarBajoStock(reporteBajoStock(), FormatoReporte.PDF);
-
-        assertTrue(archivo.length > 0);
-        assertTrue(contieneFirma(archivo, FIRMA_PDF));
-    }
-
-    @Test
-    void exportarBajoStock_excel_generaArchivoXlsx() {
-        byte[] archivo = service.exportarBajoStock(reporteBajoStock(), FormatoReporte.EXCEL);
-
-        assertTrue(archivo.length > 0);
-        assertTrue(esZip(archivo));
-    }
-
-    @Test
-    void exportarReportesVacios_tambienGeneraArchivosValidos() {
-        ReporteMovimientosResponse vacio = new ReporteMovimientosResponse(0, 0, 0, List.of());
-
-        byte[] pdf = service.exportarMovimientos(vacio, FormatoReporte.PDF);
-        byte[] excel = service.exportarConsumo(List.of(), FormatoReporte.EXCEL);
+        byte[] pdf = service.exportarValorInventario(vacio, FormatoReporte.PDF);
+        byte[] excel = service.exportarValorInventario(vacio, FormatoReporte.EXCEL);
 
         assertTrue(contieneFirma(pdf, FIRMA_PDF));
         assertTrue(esZip(excel));

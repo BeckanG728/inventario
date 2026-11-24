@@ -24,7 +24,8 @@ Los requisitos y las reglas de negocio se documentan en `docs/`.
 | Documento | Contenido |
 |---|---|
 | [REQUISITOS_FUNCIONALES.md](docs/REQUISITOS_FUNCIONALES.md) | Casos de uso y requisitos funcionales |
-| [REGLAS_DE_NEGOCIO.md](docs/REGLAS_DE_NEGOCIO.md) | Reglas RN107–RN408 y su trazabilidad |
+| [REGLAS_DE_NEGOCIO.md](docs/REGLAS_DE_NEGOCIO.md) | Reglas de negocio por dominio (RN1xx–RN4xx) y su trazabilidad |
+| [INTEGRACION_FRONTEND.md](docs/INTEGRACION_FRONTEND.md) | **Empieza aquí si desarrollas el frontend**: organización del backend, convenciones, endpoints por pantalla y migración de contratos |
 | [CATALOGO_ENDPOINTS.md](docs/CATALOGO_ENDPOINTS.md) | Endpoints, matriz de acceso, parámetros y contratos request/response |
 | [POLITICAS_DE_SEGURIDAD.md](docs/POLITICAS_DE_SEGURIDAD.md) | Roles, autenticación JWT, autorización y limitación de frecuencia |
 | [VALIDACIONES.md](docs/VALIDACIONES.md) | Validaciones y restricciones de datos por dominio |

@@ -1,7 +1,7 @@
 package com.taller.reportes.dashboard.service.impl;
 
-import com.taller.controlstock.alerta.dto.response.AlertaStock;
-import com.taller.controlstock.alerta.service.AlertaService;
+import com.taller.monitoreo.dto.response.AlertaStock;
+import com.taller.monitoreo.service.AlertaService;
 import com.taller.catalogo.api.ProductoStockMinimo;
 import com.taller.reportes.dashboard.dto.response.DashboardResponse;
 import com.taller.reportes.dashboard.dto.response.DashboardResponse.AlertasResumen;

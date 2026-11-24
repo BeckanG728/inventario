@@ -7,6 +7,7 @@ import com.taller.catalogo.categoria.repository.CategoriaRepository;
 import com.taller.catalogo.categoria.service.CategoriaService;
 import com.taller.catalogo.categoria.specification.CategoriaSpecification;
 import com.taller.compartido.exception.DuplicateResourceException;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -56,6 +57,16 @@ public class CategoriaServiceImpl implements CategoriaService {
             filtros = filtros.and(CategoriaSpecification.activoIgual(activo));
         }
         return repository.findAll(filtros, pageable).map(CategoriaResponse::from);
+    }
+
+    /** Listado ligero para combobox: solo categorías activas, sin paginar. */
+    @Override
+    @Transactional(readOnly = true)
+    public List<CategoriaResponse> listarActivos() {
+        return repository.findAll(CategoriaSpecification.activoIgual(true), Sort.by("nombre", "id"))
+                .stream()
+                .map(CategoriaResponse::from)
+                .toList();
     }
 
     private static String blankToNull(String value) {

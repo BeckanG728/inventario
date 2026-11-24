@@ -4,10 +4,11 @@ Este documento contiene **exclusivamente reglas de negocio**: políticas, restri
 dominio del taller mecánico. No incluye validaciones de entrada, políticas de seguridad, decisiones técnicas ni
 contratos de API; esos contenidos se documentan en los documentos enlazados al final.
 
-Los identificadores `RN101` a `RN109`, `RN201` a `RN209`, `RN301` a `RN305`, `RN404`, `RN405`, `RN407` y `RN408` se
+Los identificadores `RN101` a `RN109`, `RN201` a `RN209`, `RN301` a `RN305`, `RN405`, `RN407` y `RN408` se
 conservan de `PLAN.md`. `RN118` se asignó en la reclasificación a las antiguas reglas `M100-01`
-y `M100-02`, que no tenían número `RN`. Las reglas que se dividieron mantienen su identificador para la parte de negocio
-y remiten a los documentos especializados para las partes trasladadas.
+y `M100-02`, que no tenían número `RN`. `RN309` se incorporó con la clasificación operativa del nivel de stock;
+`RN411` se retiró al eliminarse el reporte de bajo stock. Las reglas que se dividieron mantienen su identificador para
+la parte de negocio y remiten a los documentos especializados para las partes trasladadas.
 
 Las reglas RN401 a RN403 y RN406 no existen en la numeración original.
 
@@ -53,8 +54,9 @@ Las reglas RN401 a RN403 y RN406 no existen en la numeración original.
   aceptan un valor de stock.
 - **Consecuencia:** cualquier intento de fijar el stock desde la edición del producto no surte efecto; el stock
   solo puede variar mediante movimientos.
-- **Trazabilidad:** la generación del SKU a partir del identificador es una decisión técnica y se documenta en
-  [CONFIGURACION_TECNICA.md](CONFIGURACION_TECNICA.md).
+- **Trazabilidad:** el patrón del SKU (`AAA-ccc-nnnn`) es una decisión técnica y se documenta en
+  [CONFIGURACION_TECNICA.md](CONFIGURACION_TECNICA.md). El SKU es una instantánea de la creación: si después cambian
+  categoría o proveedor, no se regenera.
 
 ### RN108 — Conservación del historial de productos
 
@@ -140,7 +142,8 @@ Las reglas RN401 a RN403 y RN406 no existen en la numeración original.
 ### RN208 — Trazabilidad de movimientos
 
 - **Enunciado:** Cada movimiento confirmado conserva el tipo de movimiento, el producto, la cantidad o variación,
-  el stock anterior y posterior, la fecha, el usuario y el motivo o justificación.
+  el stock anterior y posterior, la fecha, el usuario, el motivo o justificación y el costo unitario vigente al
+  momento de la operación (real en entradas, snapshot de `costoUltimaCompra` en consumos y ajustes).
 - **Condiciones:** la información se conserva como parte del historial del inventario y no se elimina al
   desactivar el producto.
 - **Consecuencia:** cualquier movimiento confirmado puede auditarse y reconstruir el efecto producido sobre el
@@ -171,8 +174,8 @@ Las reglas RN401 a RN403 y RN406 no existen en la numeración original.
 - **Enunciado:** Hay bajo stock cuando el stock actual es menor o igual al stock mínimo. Solo se consideran los
   productos activos.
 - **Condiciones:** el stock actual y el stock mínimo se comparan en la misma unidad de medida del producto.
-- **Consecuencia:** el producto se incluye en las alertas y en los reportes de bajo stock; si el stock supera el
-  mínimo, deja de considerarse en riesgo.
+- **Consecuencia:** el producto se incluye en las alertas y en el listado operativo de existencias cuando se filtra
+  por estado `BAJO` o `SIN_STOCK`; si el stock supera el mínimo, deja de considerarse en riesgo.
 - **Trazabilidad:** la exposición del indicador `stockCritico` en las respuestas se especifica en
   [CATALOGO_ENDPOINTS.md](CATALOGO_ENDPOINTS.md).
 
@@ -185,6 +188,15 @@ Las reglas RN401 a RN403 y RN406 no existen en la numeración original.
   movimiento de inventario.
 - **Trazabilidad:** el orden de presentación de las alertas se especifica en
   [REQUISITOS_FUNCIONALES.md](REQUISITOS_FUNCIONALES.md).
+
+### RN309 — Clasificación operativa del nivel de stock
+
+- **Enunciado:** Todo producto activo se clasifica en `NORMAL` (stock actual mayor al mínimo), `BAJO` (stock mayor que
+  cero y menor o igual al mínimo) o `SIN_STOCK` (stock actual cero).
+- **Condiciones:** es una clasificación derivada, calculada al consultar; no se persiste.
+- **Consecuencia:** es la regla compartida por el filtro `estadoStock` de `GET /api/monitoreo/existencias` y por el cálculo de
+  cantidad sugerida de `GET /api/monitoreo/alertas`.
+- **Trazabilidad:** ver [CATALOGO_ENDPOINTS.md](CATALOGO_ENDPOINTS.md) §6.1.
 
 ## 5. Consultas, reportes y valoración
 

@@ -7,6 +7,7 @@ import com.taller.catalogo.proveedor.repository.ProveedorRepository;
 import com.taller.catalogo.proveedor.service.ProveedorService;
 import com.taller.catalogo.proveedor.specification.ProveedorSpecification;
 import com.taller.compartido.exception.DuplicateResourceException;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -65,6 +66,16 @@ public class ProveedorServiceImpl implements ProveedorService {
             filtros = filtros.and(ProveedorSpecification.activoIgual(activo));
         }
         return repository.findAll(filtros, pageable).map(ProveedorResponse::from);
+    }
+
+    /** Listado ligero para combobox: solo proveedores activos, sin paginar. */
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProveedorResponse> listarActivos() {
+        return repository.findAll(ProveedorSpecification.activoIgual(true), Sort.by("razonSocial", "id"))
+                .stream()
+                .map(ProveedorResponse::from)
+                .toList();
     }
 
     private static String blankToNull(String value) {

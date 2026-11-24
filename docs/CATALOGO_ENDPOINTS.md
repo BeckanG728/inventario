@@ -8,6 +8,9 @@ Documentos relacionados: [REGLAS_DE_NEGOCIO.md](REGLAS_DE_NEGOCIO.md), [VALIDACI
 y [REQUISITOS_FUNCIONALES.md](REQUISITOS_FUNCIONALES.md).
 
 - **Prefijo global:** `/api`
+- **Convención de rutas:** los dominios de escritura exponen una raíz plana por entidad (`/api/productos`,
+  `/api/movimientos`, `/api/consumos`); los dominios de consulta agrupan sus recursos bajo un namespace
+  (`/api/reportes/*`, `/api/monitoreo/{alertas,existencias}`).
 - **Base URL:** `http://<host>:${SERVER_PORT}`
 - **Formato:** `application/json`
 - **Autenticación:** JWT en cabecera `Authorization: Bearer <token>`
@@ -33,26 +36,28 @@ y [REQUISITOS_FUNCIONALES.md](REQUISITOS_FUNCIONALES.md).
 | Seguridad       | PATCH  | `/api/usuarios/{id}/password`        |  ✅   |     ❌      |    ❌    |    —    |
 | Auditoría       | GET    | `/api/auditoria`                     |  ✅   |     ❌      |    ❌    |    —    |
 | Catálogo        | POST   | `/api/categorias`                    |  ❌   |     ✅      |    ❌    |    —    |
+| Catálogo        | GET    | `/api/categorias`                    |  ❌   |     ✅      |    ❌    |    —    |
+| Catálogo        | GET    | `/api/categorias/activos`            |  ❌   |     ✅      |    ✅    |    —    |
 | Catálogo        | POST   | `/api/proveedores`                   |  ❌   |     ✅      |    ❌    |    —    |
+| Catálogo        | GET    | `/api/proveedores`                   |  ❌   |     ✅      |    ❌    |    —    |
+| Catálogo        | GET    | `/api/proveedores/activos`           |  ❌   |     ✅      |    ✅    |    —    |
 | Productos       | POST   | `/api/productos`                     |  ❌   |     ✅      |    ❌    |    —    |
 | Productos       | GET    | `/api/productos`                     |  ❌   |     ✅      |    ✅    |    —    |
 | Productos       | PUT    | `/api/productos/{id}`                |  ❌   |     ✅      |    ❌    |    —    |
-| Productos       | PUT    | `/api/stock/producto/{id}/minimo`   |  ❌   |     ✅      |    ❌    |    —    |
+| Productos       | PUT    | `/api/productos/{id}/stock-minimo`   |  ❌   |     ✅      |    ❌    |    —    |
 | Productos       | PATCH  | `/api/productos/{id}/desactivar`     |  ❌   |     ✅      |    ❌    |    —    |
-| Inventario      | GET    | `/api/existencias`                   |  ❌   |     ✅      |    ✅    |    —    |
-| Inventario      | POST   | `/api/movimientos/entrada`           |  ❌   |     ✅      |    ❌    |    —    |
-| Inventario      | POST   | `/api/movimientos/ajuste`            |  ❌   |     ✅      |    ❌    |    —    |
+| Monitoreo       | GET    | `/api/monitoreo/existencias`                   |  ❌   |     ✅      |    ✅    |    —    |
+| Inventario      | POST   | `/api/movimientos/entrada`                      |  ❌   |     ✅      |    ❌    |    —    |
+| Inventario      | POST   | `/api/movimientos/ajuste`                       |  ❌   |     ✅      |    ❌    |    —    |
 | Inventario      | POST   | `/api/consumos`                      |  ❌   |     ✅      |    ✅    |    —    |
-| Alertas         | GET    | `/api/stock/alertas`                       |  ❌   |     ✅      |    ✅    |    —    |
+| Inventario      | GET    | `/api/consumos/productos-frecuentes` |  ❌   |     ✅      |    ✅    |    —    |
+| Monitoreo       | GET    | `/api/monitoreo/alertas`                       |  ❌   |     ✅      |    ✅    |    —    |
 | Dashboard       | GET    | `/api/dashboard`                     |  ❌   |     ✅      |    ❌    |    —    |
-| Reportes        | GET    | `/api/reportes/movimientos`          |  ❌   |     ✅      |    ❌    |    —    |
-| Reportes        | GET    | `/api/reportes/consumo`              |  ❌   |     ✅      |    ❌    |    —    |
+| Inventario      | GET    | `/api/movimientos`                   |  ❌   |     ✅      |    ❌    |    —    |
 | Reportes        | GET    | `/api/reportes/valor-inventario`     |  ❌   |     ✅      |    ❌    |    —    |
-| Reportes        | GET    | `/api/reportes/bajo-stock`           |  ❌   |     ✅      |    ❌    |    —    |
-| Exportación     | GET    | `/api/reportes/movimientos/exportar` |  ❌   |     ✅      |    ❌    |    —    |
-| Exportación     | GET    | `/api/reportes/consumo/exportar`     |  ❌   |     ✅      |    ❌    |    —    |
-| Exportación     | GET    | `/api/reportes/bajo-stock/exportar`  |  ❌   |     ✅      |    ❌    |    —    |
+| Exportación     | GET    | `/api/reportes/valor-inventario/exportar` | ❌ |    ✅      |    ❌    |    —    |
 | Estadísticas    | GET    | `/api/estadisticas`                  |  ❌   |     ✅      |    ❌    |    —    |
+| Estadísticas    | GET    | `/api/estadisticas/por-tipo`         |  ❌   |     ✅      |    ❌    |    —    |
 | Infraestructura | GET    | `/actuator/health`                   |   —   |      —      |    —     |   ✅    |
 | Infraestructura | GET    | `/actuator/info`                     |   —   |      —      |    —     |   ✅    |
 
@@ -338,7 +343,17 @@ Crea un proveedor. El RUC es obligatorio y único.
 
 - **Errores:** `400 VALIDATION_ERROR`, `401`, `403 FORBIDDEN`, `409 DUPLICATE_RESOURCE`.
 
-> No existen endpoints para listar, actualizar o desactivar categorías/proveedores.
+### 4.3 GET `/api/categorias` y GET `/api/proveedores`
+
+Listados paginados del catálogo, con filtros por nombre/razón social y por `activo`. Incluyen registros inactivos
+cuando no se aplica el filtro. Acceso: `JEFE_TALLER`.
+
+### 4.4 GET `/api/categorias/activos` y GET `/api/proveedores/activos`
+
+Listados ligeros y sin paginar de solo los registros activos, pensados para los combobox de filtros. Acceso:
+`JEFE_TALLER` y `MECANICO`. Devuelven `List<CategoriaResponse>` / `List<ProveedorResponse>`.
+
+> No existen endpoints para actualizar ni desactivar categorías/proveedores.
 
 ---
 
@@ -346,14 +361,15 @@ Crea un proveedor. El RUC es obligatorio y único.
 
 ### 5.1 POST `/api/productos`
 
-Crea un producto. El stock inicial siempre es `0`; el SKU se genera automáticamente con el patrón `CP-000000`.
+Crea un producto. El stock inicial siempre es `0`. El backend genera los dos identificadores: el `codigo` con el
+patrón `PRD-nnnn` (correlativo global, por ejemplo `PRD-0001`) y el SKU con `AAA-ccc-nnnn` (tres siglas del nombre,
+id de categoría y correlativo dentro de ese prefijo, por ejemplo `FIL-002-0007`). El cliente no envía ninguno de los dos.
 
 - **Acceso:** `JEFE_TALLER`
 - **Body:**
 
 | Campo          | Tipo    | Obligatorio | Validación                                      |
 |----------------|---------|-------------|-------------------------------------------------|
-| `codigo`       | string  | Sí          | No vacío, máximo 50 caracteres, único           |
 | `nombre`       | string  | Sí          | No vacío, máximo 150 caracteres                 |
 | `descripcion`  | string  | No          | Máximo 500 caracteres                           |
 | `unidadMedida` | string  | Sí          | No vacío, máximo 30 caracteres                  |
@@ -365,7 +381,6 @@ Los campos `id_categoria` e `id_proveedor` aceptan como alias `idCategoria`/`cat
 
 ```json
 {
-  "codigo": "FIL-001",
   "nombre": "Filtro de aceite",
   "descripcion": "Filtro para motor 1.6L",
   "unidadMedida": "UNIDAD",
@@ -376,8 +391,7 @@ Los campos `id_categoria` e `id_proveedor` aceptan como alias `idCategoria`/`cat
 ```
 
 - **Respuesta 201 Created:** objeto `ProductoResponse` (ver sección 5.6).
-- **Errores:** `400 VALIDATION_ERROR` (incluye categoría/proveedor inexistente o inactivo), `401`, `403 FORBIDDEN`,
-  `409 DUPLICATE_RESOURCE` (el `codigo` ya existe).
+- **Errores:** `400 VALIDATION_ERROR` (incluye categoría/proveedor inexistente o inactivo), `401`, `403 FORBIDDEN`.
 
 ---
 
@@ -408,8 +422,8 @@ Lista productos con paginación y filtros opcionales.
   "content": [
     {
       "id": 12,
-      "codigo": "FIL-001",
-      "sku": "CP-000012",
+      "codigo": "PRD-0001",
+      "sku": "FIL-002-0007",
       "nombre": "Filtro de aceite",
       "descripcion": "Filtro para motor 1.6L",
       "unidadMedida": "UNIDAD",
@@ -454,7 +468,6 @@ Actualiza un producto completo.
 
 | Campo          | Tipo    | Obligatorio | Validación                            |
 |----------------|---------|-------------|---------------------------------------|
-| `codigo`       | string  | Sí          | No vacío, máximo 50, único            |
 | `nombre`       | string  | Sí          | No vacío, máximo 150                  |
 | `descripcion`  | string  | No          | Máximo 500                            |
 | `unidadMedida` | string  | Sí          | No vacío, máximo 30                   |
@@ -464,15 +477,15 @@ Actualiza un producto completo.
 | `id_proveedor` | integer | Sí          | `> 0`, existente y activo             |
 
 - **Respuesta 200 OK:** `ProductoResponse`.
-- **Errores:** `400 VALIDATION_ERROR`, `401`, `403 FORBIDDEN`, `404 NOT_FOUND`, `409 DUPLICATE_RESOURCE` (el `codigo`
-  ya pertenece a otro producto).
+- **Errores:** `400 VALIDATION_ERROR`, `401`, `403 FORBIDDEN`, `404 NOT_FOUND`.
 
+> El `codigo` y el SKU no se envían ni se editan: los genera el backend y permanecen inmutables.
 > Si el producto ya tiene movimientos registrados, solo se permite cambiar `nombre`, `descripcion` y `unidadMedida`;
-> `codigo`, `stockMinimo`, `activo`, categoría y proveedor deben enviarse sin cambios (si no, `400`).
+> `stockMinimo`, `activo`, categoría y proveedor deben enviarse sin cambios (si no, `400`).
 
 ---
 
-### 5.4 PUT `/api/stock/producto/{id}/minimo`
+### 5.4 PUT `/api/productos/{id}/stock-minimo`
 
 Actualiza únicamente el stock mínimo.
 
@@ -516,8 +529,8 @@ Desactiva lógicamente un producto (`activo = false`).
 | Campo                  | Tipo    | Descripción                             |
 |------------------------|---------|-----------------------------------------|
 | `id`                   | integer | Identificador                           |
-| `codigo`               | string  | Código único                            |
-| `sku`                  | string  | SKU generado (`CP-` + 6 dígitos)        |
+| `codigo`               | string  | Código generado (`PRD-nnnn`), inmutable |
+| `sku`                  | string  | SKU generado (`AAA-ccc-nnnn`)           |
 | `nombre`               | string  | Nombre                                  |
 | `descripcion`          | string  | Descripción                             |
 | `unidadMedida`         | string  | Unidad de medida                        |
@@ -533,39 +546,57 @@ Desactiva lógicamente un producto (`activo = false`).
 
 ---
 
-## 6. Dominio: Inventario (existencias y movimientos)
+## 6. Dominio: Inventario (movimientos)
 
-### 6.1 GET `/api/existencias`
+> La consulta de existencias se mantiene aquí por continuidad del documento, pero pertenece al dominio `monitoreo`
+> junto con las alertas (§7); ambos comparten la regla `EstadoStock`.
 
-Consulta el stock de uno o varios productos activos.
+### 6.1 GET `/api/monitoreo/existencias`
+
+Listado operativo del stock. **Solo incluye productos activos**; no admite parámetro `activo`, a diferencia de
+`GET /api/productos`.
 
 - **Acceso:** `JEFE_TALLER`, `MECANICO`
 - **Parámetros de URL:**
 
-| Parámetro | Tipo             | Obligatorio | Descripción                                         |
-|-----------|------------------|-------------|-----------------------------------------------------|
-| `ids`     | lista de integer | Sí          | IDs de producto. Acepta `?ids=1&ids=2` o `?ids=1,2` |
+| Parámetro     | Tipo    | Obligatorio | Default | Descripción                                              |
+|---------------|---------|-------------|---------|----------------------------------------------------------|
+| `page`        | integer | No          | `0`     | Número de página (se normaliza a `>= 0`)                 |
+| `size`        | integer | No          | `10`    | Tamaño de página (se limita a 1–100)                     |
+| `nombre`      | string  | No          | —       | Búsqueda parcial por nombre o código                     |
+| `categoria`   | integer | No          | —       | Filtra por ID de categoría                               |
+| `proveedorId` | integer | No          | —       | Filtra por ID de proveedor                               |
+| `estadoStock` | string  | No          | —       | `NORMAL`, `BAJO` o `SIN_STOCK`                           |
 
-- **Ejemplo:** `GET /api/existencias?ids=12&ids=15`
-- **Respuesta 200 OK:**
+- **Ejemplo:** `GET /api/monitoreo/existencias?categoria=3&estadoStock=BAJO&page=0&size=10`
+- **Respuesta 200 OK:** `PaginaResponse<ExistenciaConsultaResponse>` con los campos del producto más `estadoStock`
+  (`NORMAL`, `BAJO`, `SIN_STOCK`) y `cantidadSugerida`. La clasificación y la sugerencia usan la misma regla que
+  `GET /api/monitoreo/alertas`.
 
 ```json
-[
-  {
-    "productoId": 12,
-    "codigo": "FIL-001",
-    "nombre": "Filtro de aceite",
-    "stockActual": 25,
-    "stockMinimo": 10,
-    "stockCritico": false
-  }
-]
+{
+  "content": [
+    {
+      "id": 12,
+      "codigo": "PRD-0001",
+      "nombre": "Filtro de aceite",
+      "categoriaNombre": "Filtros",
+      "proveedorRazonSocial": "Repuestos Andinos S.A.",
+      "stockActual": 4,
+      "stockMinimo": 10,
+      "stockCritico": true,
+      "estadoStock": "BAJO",
+      "cantidadSugerida": 6
+    }
+  ],
+  "page": 0,
+  "size": 10,
+  "totalElements": 1,
+  "totalPages": 1
+}
 ```
 
-- **Errores:** `400 VALIDATION_ERROR` (sin `ids`, producto inactivo), `401`, `403 FORBIDDEN`, `404 NOT_FOUND` (algún ID
-  no existe).
-
-> Los identificadores repetidos en `ids` se ignoran: cada producto se consulta una sola vez (RN212).
+- **Errores:** `400 VALIDATION_ERROR` (parámetros con formato inválido), `401`, `403 FORBIDDEN`.
 
 ---
 
@@ -746,9 +777,49 @@ del reloj del servidor.
 
 ---
 
-## 7. Dominio: Alertas
+### 6.6 GET `/api/consumos/productos-frecuentes`
 
-### 7.1 GET `/api/stock/alertas`
+Atajo para el formulario de registro de consumos: devuelve los **5** productos activos con stock disponible más
+consumidos, de modo que el usuario pueda agregarlos sin buscarlos en el catálogo.
+
+- **Acceso:** `MECANICO`, `JEFE_TALLER`
+- **Parámetros:** ninguno.
+- **Periodo:** últimos 90 días, calculados en `America/Lima` y convertidos a UTC. No es configurable.
+- **Filtro:** se excluyen los productos con `stockActual = 0` (o nulo). El filtro se aplica antes del corte, por lo que
+  si un producto frecuente está sin stock, lo ocupa el siguiente de la lista.
+- **Orden:** por `vecesConsumido` descendente; si no hay historial, por nombre ascendente.
+- **Respuesta 200 OK:** array simple (sin paginación) de `ProductoFrecuenteResponse`:
+
+```json
+[
+  {
+    "productoId": 12,
+    "codigo": "PRD-0001",
+    "nombre": "Abrazadera Aston Martin Thema",
+    "unidadMedida": "UNIDAD",
+    "stockActual": 89,
+    "stockMinimo": 10,
+    "stockCritico": false,
+    "estadoStock": "NORMAL",
+    "categoriaNombre": "Neumáticos",
+    "vecesConsumido": 17,
+    "unidadesConsumidas": 42
+  }
+]
+```
+
+- **Errores:** `401`, `403 FORBIDDEN`.
+
+> Este listado es la vista por defecto del selector de repuestos, **no sustituye a la búsqueda**: si el producto
+> consumido no está entre los cinco, el formulario debe seguir usando `GET /api/productos` para buscarlo por código
+> o nombre. Solo se incluyen productos activos; elaborar un consumo con un producto inactivo sería rechazado con
+> `400 VALIDATION_ERROR` por `POST /api/consumos`.
+
+---
+
+## 7. Dominio: Monitoreo (alertas)
+
+### 7.1 GET `/api/monitoreo/alertas`
 
 Lista los productos activos con bajo stock (`stockActual <= stockMinimo`), ordenados por cantidad sugerida descendente y
 luego por nombre.
@@ -760,7 +831,7 @@ luego por nombre.
 ```json
 [
   {
-    "codigo": "FIL-001",
+    "codigo": "PRD-0001",
     "nombre": "Filtro de aceite",
     "stockActual": 4,
     "stockMinimo": 10,
@@ -805,7 +876,7 @@ Devuelve el resumen general del inventario, KPIs del mes, alertas y últimos mov
     "total": 6,
     "masUrgentes": [
       {
-        "codigo": "FIL-001",
+        "codigo": "PRD-0001",
         "nombre": "Filtro de aceite",
         "stockActual": 0,
         "stockMinimo": 10,
@@ -839,10 +910,13 @@ Devuelve el resumen general del inventario, KPIs del mes, alertas y últimos mov
 
 ## 9. Dominio: Reportes
 
-> Solo `GET /api/reportes/movimientos` está paginado. El resto de reportes (`consumo`, `valor-inventario`, `bajo-stock`) y
-> todas las exportaciones devuelven el resultado completo.
+> `GET /api/reportes/valor-inventario` devuelve el detalle paginado; su exportación entrega el contenido completo.
+> El reporte de movimientos ya no pertenece a este dominio: está en Inventario (`GET /api/movimientos`).
 
-### 9.1 GET `/api/reportes/movimientos`
+### 9.1 GET `/api/movimientos`
+
+> Perteneciente al dominio **Inventario**; se documenta aquí por continuidad del catálogo. Se sirve desde
+> `MovimientoController`, que también expone `POST /api/movimientos/entrada` y `/ajuste`.
 
 Reporte de movimientos en un rango de fechas, con totales por tipo y paginación.
 
@@ -859,7 +933,7 @@ Reporte de movimientos en un rango de fechas, con totales por tipo y paginación
 
 \* En el controlador figuran como opcionales, pero el servicio exige ambos y devuelve `400` si falta alguno.
 
-- **Ejemplo:** `GET /api/reportes/movimientos?desde=2026-10-01&hasta=2026-10-31&tipo=ENTRADA&page=0&size=10`
+- **Ejemplo:** `GET /api/movimientos?desde=2026-10-01&hasta=2026-10-31&tipo=ENTRADA&page=0&size=10`
 - **Respuesta 200 OK:**
 
 ```json
@@ -879,8 +953,11 @@ Reporte de movimientos en un rango de fechas, con totales por tipo y paginación
       "costoUnitario": 8.50,
       "motivo": "Entrada de proveedor Repuestos Andinos S.A.",
       "productoId": 12,
+      "productoCodigo": "FIL-001",
+      "productoNombre": "Filtro de aceite",
       "consumoId": null,
-      "usuarioId": 2
+      "usuarioId": 2,
+      "usuarioUsername": "jefe_taller1"
     }
   ],
   "page": 0,
@@ -897,6 +974,8 @@ Reporte de movimientos en un rango de fechas, con totales por tipo y paginación
 | `totalElements` | integer | Total de movimientos que cumplen el filtro  |
 | `totalPages`    | integer | Total de páginas                            |
 
+- Cada movimiento incluye `productoCodigo`, `productoNombre` y `usuarioUsername` además de `productoId` y `usuarioId`,
+  para que el reporte sea legible sin consultas adicionales.
 - `size` por defecto es `10`, igual que en `GET /api/productos` (§5.2).
 - Solo se pagina la lista `movimientos`. `totalEntradas`, `totalConsumos` y `totalAjustes` se calculan sobre **todos** los
   movimientos del filtro, no sobre la página, y no cambian al pasar de página.
@@ -913,8 +992,15 @@ Reporte de movimientos en un rango de fechas, con totales por tipo y paginación
 Calcula el valor estimado del inventario activo: `stockActual * costoUltimaCompra` por producto.
 
 - **Acceso:** `JEFE_TALLER` (**ADMIN y MECANICO reciben 403**)
-- **Parámetros:** ninguno.
-- **Respuesta 200 OK:**
+- **Parámetros de URL:**
+
+| Parámetro | Tipo    | Obligatorio | Default | Descripción                     |
+|-----------|---------|-------------|---------|---------------------------------|
+| `page`    | integer | No          | `0`     | Número de página (se normaliza a `>= 0`) |
+| `size`    | integer | No          | `10`    | Tamaño de página (se limita a 1–100) |
+
+- **Respuesta 200 OK:** `ValorInventarioPaginaResponse`. Los totales cubren **todos** los productos activos, no solo la
+  página; `detalle` contiene únicamente los registros de la página.
 
 ```json
 {
@@ -923,7 +1009,7 @@ Calcula el valor estimado del inventario activo: `stockActual * costoUltimaCompr
   "productosSinCosto": 3,
   "detalle": [
     {
-      "codigo": "FIL-001",
+      "codigo": "PRD-0001",
       "nombre": "Filtro de aceite",
       "stockActual": 25,
       "costoUltimaCompra": 8.50,
@@ -936,99 +1022,31 @@ Calcula el valor estimado del inventario activo: `stockActual * costoUltimaCompr
       "costoUltimaCompra": null,
       "valorEstimadoProducto": 0.00
     }
-  ]
+  ],
+  "page": 0,
+  "size": 10,
+  "totalElements": 40,
+  "totalPages": 4
 }
 ```
 
 Los productos sin costo se incluyen en `detalle` con `costoUltimaCompra: null` y valor `0.00`, y no suman al total.
+Una página fuera de rango devuelve `200 OK` con `detalle` vacío y los totales correctos.
 
-- **Errores:** `401`, `403 FORBIDDEN`.
-
----
-
-### 9.3 GET `/api/reportes/bajo-stock`
-
-Lista los productos con bajo stock agrupados por proveedor (orden alfabético).
-
-- **Acceso:** `JEFE_TALLER` (**ADMIN y MECANICO reciben 403**)
-- **Parámetros:** ninguno.
-- **Respuesta 200 OK:**
-
-```json
-[
-  {
-    "proveedor": "Repuestos Andinos S.A.",
-    "productos": [
-      {
-        "codigo": "FIL-001",
-        "nombre": "Filtro de aceite",
-        "stockActual": 4,
-        "stockMinimo": 10,
-        "sugerido": 6
-      }
-    ]
-  }
-]
-```
-
-- **Errores:** `401`, `403 FORBIDDEN`.
+- **Errores:** `400 VALIDATION_ERROR` (`page` o `size` con formato inválido), `401`, `403 FORBIDDEN`.
 
 ---
 
-### 9.4 GET `/api/reportes/consumo`
+### 9.3 Exportación de valor de inventario (PDF y Excel)
 
-Reporte de consumo en un rango de fechas. Toma los movimientos de tipo `CONSUMO` y los agrupa por producto y mecánico,
-ordenados por nombre de producto y luego por mecánico.
-
-- **Acceso:** `JEFE_TALLER` (**ADMIN y MECANICO reciben 403**)
-- **Parámetros de URL:**
-
-| Parámetro | Tipo                | Obligatorio | Descripción             |
-|-----------|---------------------|-------------|-------------------------|
-| `desde`   | date (`yyyy-MM-dd`) | Sí*         | Fecha inicial inclusive |
-| `hasta`   | date (`yyyy-MM-dd`) | Sí*         | Fecha final inclusive   |
-
-\* En el controlador figuran como opcionales, pero el servicio exige ambos y devuelve `400` si falta alguno.
-
-- **Ejemplo:** `GET /api/reportes/consumo?desde=2026-10-01&hasta=2026-10-31`
-- **Respuesta 200 OK:**
-
-```json
-[
-  {
-    "productoId": 12,
-    "productoCodigo": "FIL-001",
-    "productoNombre": "Filtro de aceite",
-    "mecanico": "mecanico1",
-    "finalidades": [
-      "Cambio de aceite"
-    ],
-    "cantidadTotal": 6,
-    "fechas": [
-      "2026-10-05T14:10:00Z",
-      "2026-10-12T16:30:00Z"
-    ]
-  }
-]
-```
-
-- `finalidades` lista las finalidades distintas declaradas; `fechas` contiene el instante de cada movimiento agrupado.
-- **Errores:** `400 VALIDATION_ERROR` (faltan fechas, `hasta < desde`, formato inválido), `401`, `403 FORBIDDEN`.
-
----
-
-### 9.5 Exportación de reportes (PDF y Excel)
-
-Devuelven el mismo contenido del reporte equivalente como archivo adjunto (`Content-Disposition: attachment`).
+Devuelve el contenido completo de `GET /api/reportes/valor-inventario` (todos los productos, sin paginar) como archivo
+adjunto (`Content-Disposition: attachment`). **No se exporta el reporte de movimientos.**
 
 - **Acceso:** `JEFE_TALLER` (**ADMIN y MECANICO reciben 403**)
-- **Endpoints:**
 
-| Ruta                                     | Reporte de origen           | Parámetros (además de `formato`) | Nombre del archivo    |
-|------------------------------------------|-----------------------------|----------------------------------|-----------------------|
-| `GET /api/reportes/movimientos/exportar` | `/api/reportes/movimientos` | `desde`, `hasta`, `tipo`         | `reporte-movimientos` |
-| `GET /api/reportes/consumo/exportar`     | `/api/reportes/consumo`     | `desde`, `hasta`                 | `reporte-consumo`     |
-| `GET /api/reportes/bajo-stock/exportar`  | `/api/reportes/bajo-stock`  | —                                | `reporte-bajo-stock`  |
+| Ruta                                          | Reporte de origen              | Parámetros (además de `formato`) | Nombre del archivo          |
+|-----------------------------------------------|--------------------------------|----------------------------------|-----------------------------|
+| `GET /api/reportes/valor-inventario/exportar` | `/api/reportes/valor-inventario` | —                                | `reporte-valor-inventario`  |
 
 - **Parámetro `formato` (obligatorio):**
 
@@ -1037,12 +1055,12 @@ Devuelven el mismo contenido del reporte equivalente como archivo adjunto (`Cont
 | `pdf`           | `application/pdf`                                                   | `.pdf`    |
 | `excel`, `xlsx` | `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` | `.xlsx`   |
 
-El valor de `formato` no distingue mayúsculas. Las reglas de `desde`, `hasta` y `tipo` son las del reporte de origen.
-Las exportaciones no se paginan: ignoran `page` y `size` y exportan el reporte completo.
+El valor de `formato` no distingue mayúsculas. El archivo incluye el detalle por producto (código, nombre, stock
+actual, costo y valor estimado) y un subtítulo con el total general y los conteos de productos con y sin costo.
 
-- **Ejemplo:** `GET /api/reportes/movimientos/exportar?formato=pdf&desde=2026-10-01&hasta=2026-10-31&tipo=ENTRADA`
+- **Ejemplo:** `GET /api/reportes/valor-inventario/exportar?formato=pdf`
 - **Respuesta 200 OK:** cuerpo binario del archivo.
-- **Errores:** `400 VALIDATION_ERROR` (`formato` ausente o no válido, fechas inválidas), `401`, `403 FORBIDDEN`.
+- **Errores:** `400 VALIDATION_ERROR` (`formato` ausente o no válido), `401`, `403 FORBIDDEN`.
 
 ---
 
@@ -1079,6 +1097,50 @@ Cuenta movimientos en un rango de fechas y los agrupa según la granularidad ind
 
 ---
 
+### 10.2 GET `/api/estadisticas/por-tipo`
+
+Unidades y costos movilizados por período y tipo de movimiento. A diferencia de §10.1, aquí se cuentan unidades (no
+movimientos) y se separan entradas, consumos y ajustes. Los costos se calculan sobre la tabla de movimientos como
+`cantidad × costoUnitario` de cada movimiento, con el costo vigente registrado al momento de la operación.
+
+- **Acceso:** `JEFE_TALLER` (**ADMIN y MECANICO reciben 403**)
+- **Parámetros de URL:**
+
+| Parámetro     | Tipo                | Obligatorio | Descripción                          |
+|---------------|---------------------|-------------|--------------------------------------|
+| `from`        | date (`yyyy-MM-dd`) | Sí*         | Fecha inicial inclusive              |
+| `to`          | date (`yyyy-MM-dd`) | Sí*         | Fecha final inclusive                |
+| `granularity` | string              | Sí*         | `DAY`, `WEEK` o `MONTH`              |
+| `productoId`  | integer             | No          | Filtra las unidades y costos de un producto |
+
+\* En el controlador figuran como opcionales, pero el servicio exige los tres primeros y devuelve `400` si falta alguno.
+
+- **Ejemplo:** `GET /api/estadisticas/por-tipo?from=2026-10-01&to=2026-10-31&granularity=WEEK&productoId=12`
+- **Respuesta 200 OK:** array de `EstadisticasTipoPunto`. `fecha` es el inicio del período; `entrada` y `consumo` suman
+  `cantidad`; `ajuste` suma el valor absoluto de `variacion`. Los períodos sin movimientos aparecen en cero.
+  `costoEntradas` y `costoConsumos` son `Σ(cantidad × costoUnitario)` del período, redondeados a 2 decimales con
+  `HALF_UP`. `costoAjustes` se devuelve siempre en `0`: los ajustes se registran con costo para trazabilidad, pero no
+  se valoran en este reporte. Los movimientos sin costo aportan `0` al importe sin dejar de contar sus unidades.
+
+```json
+[
+  {
+    "fecha": "2026-10-06",
+    "entrada": 40, "consumo": 12, "ajuste": 3,
+    "costoEntradas": 170.00, "costoConsumos": 68.00, "costoAjustes": 0.00
+  },
+  {
+    "fecha": "2026-10-13",
+    "entrada": 0, "consumo": 0, "ajuste": 0,
+    "costoEntradas": 0.00, "costoConsumos": 0.00, "costoAjustes": 0.00
+  }
+]
+```
+
+- **Errores:** `400 VALIDATION_ERROR` (faltan parámetros, granularidad inválida, `to < from`), `401`, `403 FORBIDDEN`.
+
+---
+
 ## 11. Infraestructura
 
 ### 11.1 GET `/actuator/health`
@@ -1105,14 +1167,12 @@ reclasificación.
 | RN119 (M100-03) | Paginación, filtros, orden e inclusión de productos inactivos | §5.2 |
 | RN210 (M200-01) | Semántica de `cantidad` y `variacion` por tipo de movimiento | §6.4 |
 | RN211 (M200-02) | Desbordamiento al sumar cantidades repetidas en un consumo | §6.5 |
-| RN212 (M200-03) | Consulta de existencias por `ids`, duplicados, inexistentes e inactivos | §6.1 |
+| RN212 (M200-03) | Listado operativo de existencias: solo activos, filtros y paginación | §6.1 |
 | RN303 | Contenido mínimo de la alerta de bajo stock | §7.1 |
-| RN404 | Contenido, agrupación y orden del reporte de consumo | §9.4 |
-| RN405 | Parámetros y validación de rangos de fechas y granularidad | §9.1, §9.4, §10.1 |
-| RN409 (M400-01) | Cortes de fecha en `America/Lima` y respuestas en UTC | §9.1, §9.4, §10.1 |
+| RN405 | Parámetros y validación de rangos de fechas y granularidad | §9.1, §10.1 |
+| RN409 (M400-01) | Cortes de fecha en `America/Lima` y respuestas en UTC | §9.1, §10.1 |
 | RN410 (M400-02) | Omisión de períodos sin movimientos y claves de período | §10.1 |
-| RN411 (M400-03) | Agrupación por proveedor en orden alfabético | §9.3 |
-| RN412 (M400-04) | Formatos de exportación y entrega como archivo adjunto | §9.5 |
+| RN412 (M400-04) | Formatos de exportación y entrega como archivo adjunto | §9.3 |
 | RN413 (M400-05) | Contenido del dashboard | §8.1 |
 | RN414 (M400-07) | Paginación, orden y totales del reporte de movimientos | §9.1 |
 

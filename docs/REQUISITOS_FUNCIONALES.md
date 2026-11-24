@@ -34,30 +34,19 @@ endpoints, parámetros, estructuras de respuesta y códigos HTTP se documentan e
 
 La configuración técnica de la tarea se detalla en [CONFIGURACION_TECNICA.md](CONFIGURACION_TECNICA.md).
 
-## 3. Reporte de consumo (RF-03)
-
-**Origen:** RN404.
-
-- El reporte permite identificar, para cada consumo, el producto, la cantidad utilizada, la fecha, el mecánico y la
-  finalidad declarada.
-- Agrupa los consumos por producto y mecánico.
-- Ordena por nombre de producto y luego por mecánico, sin distinguir mayúsculas.
-- Para cada grupo informa las finalidades distintas y las fechas de los movimientos agrupados.
-- Los detalles del endpoint y del rango de fechas están en [CATALOGO_ENDPOINTS.md](CATALOGO_ENDPOINTS.md).
-
-## 4. Reporte de movimientos (RF-04)
+## 3. Reporte de movimientos (RF-03)
 
 **Origen:** RN405, RN414.
 
 - Presenta los movimientos de inventario de un rango de fechas, con filtro opcional por tipo.
 - Informa totales por tipo (`ENTRADA`, `CONSUMO`, `AJUSTE`) calculados sobre todo el filtro, no solo sobre la página.
-- La lista de movimientos está paginada; los demás reportes y las exportaciones no se paginan.
+- La lista de movimientos está paginada; el detalle del reporte de valor de inventario también se pagina, mientras que las exportaciones entregan el contenido completo.
 - Ordena por fecha descendente y luego por identificador descendente.
 - Una página fuera de rango devuelve la lista de movimientos vacía, conservando los totales.
 
 El contrato detallado se encuentra en [CATALOGO_ENDPOINTS.md](CATALOGO_ENDPOINTS.md).
 
-## 5. Reporte de valor de inventario (RF-05)
+## 4. Reporte de valor de inventario (RF-04)
 
 **Origen:** RN407, RN408.
 
@@ -68,15 +57,7 @@ El contrato detallado se encuentra en [CATALOGO_ENDPOINTS.md](CATALOGO_ENDPOINTS
 - Informa cuántos productos quedaron excluidos.
 - Es una estimación operativa, no un valor contable oficial.
 
-## 6. Reporte de bajo stock (RF-06)
-
-**Origen:** RN411.
-
-- Lista los productos en condición de bajo stock agrupados por proveedor.
-- Los grupos de proveedor se ordenan alfabéticamente sin distinguir mayúsculas.
-- Cada grupo incluye los productos con código, nombre, stock actual, stock mínimo y cantidad sugerida.
-
-## 7. Dashboard (RF-07)
+## 5. Dashboard (RF-05)
 
 **Origen:** RN413.
 
@@ -88,7 +69,7 @@ El contrato detallado se encuentra en [CATALOGO_ENDPOINTS.md](CATALOGO_ENDPOINTS
 - Muestra los 5 movimientos más recientes.
 - El acceso corresponde a `JEFE_TALLER`.
 
-## 8. Estadísticas (RF-08)
+## 6. Estadísticas (RF-06)
 
 **Origen:** RN410.
 
@@ -97,19 +78,24 @@ El contrato detallado se encuentra en [CATALOGO_ENDPOINTS.md](CATALOGO_ENDPOINTS
 - Las claves del resultado son la fecha de inicio del período: el día para `DAY`, el lunes de la semana para `WEEK`
   y el día 1 del mes para `MONTH`.
 - Los cortes se calculan en la zona `America/Lima`.
+- El endpoint `/api/estadisticas/por-tipo` informa además las unidades y los costos de entrada, consumo y ajuste por
+  período, con la opción de filtrar por producto; en ese caso los períodos sin movimientos se muestran en cero.
+- Los costos se calculan desde la tabla de movimientos como `cantidad × costoUnitario` registrado en cada operación;
+  las entradas usan el costo real de compra y las salidas el snapshot de `costoUltimaCompra` al consumir (RN208).
+  Los ajustes no se valoran en este reporte.
 - El acceso corresponde a `JEFE_TALLER`.
 
-## 9. Exportaciones (RF-09)
+## 7. Exportaciones (RF-07)
 
 **Origen:** RN412, RN414.
 
-- Permite exportar los reportes de movimientos, consumo y bajo stock en formato PDF o Excel.
+- Permite exportar el reporte de valor de inventario en formato PDF o Excel. El reporte de movimientos no se exporta.
 - El archivo entregado contiene el mismo contenido del reporte de origen.
 - La exportación se entrega como archivo adjunto con el nombre y la extensión correspondientes al formato.
 - Las exportaciones no se paginan: exportan el contenido completo e ignoran `page` y `size`.
 - Las reglas de fechas y de formato se detallan en [VALIDACIONES.md](VALIDACIONES.md).
 
-## 10. Consultas de productos y existencias (RF-10)
+## 8. Consultas de productos y existencias (RF-08)
 
 **Origen:** RN119, RN212.
 
@@ -120,7 +106,7 @@ El contrato detallado se encuentra en [CATALOGO_ENDPOINTS.md](CATALOGO_ENDPOINTS
   inexistentes o inactivos según el contrato.
 - El detalle de parámetros y respuestas está en [CATALOGO_ENDPOINTS.md](CATALOGO_ENDPOINTS.md).
 
-## 11. Gestión de usuarios (RF-11)
+## 9. Gestión de usuarios (RF-09)
 
 **Origen:** RN110, RN111, RN112, RN113.
 
@@ -131,7 +117,7 @@ El contrato detallado se encuentra en [CATALOGO_ENDPOINTS.md](CATALOGO_ENDPOINTS
 Las políticas asociadas se documentan en [POLITICAS_DE_SEGURIDAD.md](POLITICAS_DE_SEGURIDAD.md) y las restricciones de
 datos en [VALIDACIONES.md](VALIDACIONES.md).
 
-## 12. Verificación
+## 10. Verificación
 
 Los requisitos se contrastaron estáticamente con los servicios de alertas, reportes, dashboard, estadísticas,
 exportaciones y los controladores correspondientes. No se ejecutaron pruebas de runtime.

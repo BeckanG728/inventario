@@ -7,6 +7,7 @@ import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -25,6 +26,30 @@ public final class EstadisticasBucketing {
             case WEEK -> day.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
             case MONTH -> day.withDayOfMonth(1);
         };
+    }
+
+    /** Inicio del período (día, lunes ISO o día 1) al que pertenece {@code dia}. */
+    public static LocalDate bucketDia(LocalDate dia, Granularity granularity) {
+        return switch (granularity) {
+            case DAY -> dia;
+            case WEEK -> dia.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+            case MONTH -> dia.withDayOfMonth(1);
+        };
+    }
+
+    /** Inicios de todos los períodos entre {@code from} y {@code to} (ambos inclusive), incluidos los vacíos. */
+    public static List<LocalDate> periodos(LocalDate from, LocalDate to, Granularity granularity) {
+        List<LocalDate> periodos = new ArrayList<>();
+        LocalDate actual = bucketDia(from, granularity);
+        while (!actual.isAfter(to)) {
+            periodos.add(actual);
+            actual = switch (granularity) {
+                case DAY -> actual.plusDays(1);
+                case WEEK -> actual.plusWeeks(1);
+                case MONTH -> actual.plusMonths(1);
+            };
+        }
+        return periodos;
     }
 
     public static Map<LocalDate, Long> agrupar(List<Instant> fechas, Granularity granularity) {

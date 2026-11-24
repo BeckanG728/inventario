@@ -5,6 +5,7 @@ import com.taller.catalogo.proveedor.dto.response.ProveedorResponse;
 import com.taller.catalogo.proveedor.service.ProveedorService;
 import com.taller.compartido.dto.PaginaResponse;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -39,5 +40,12 @@ public class ProveedorController {
             @RequestParam(required = false) Boolean activo) {
         return ResponseEntity.ok(PaginaResponse.from(
                 proveedorService.listar(page, size, razonSocial, ruc, activo)));
+    }
+
+    /** Listado ligero para los combobox de filtros; accesible también al mecánico. */
+    @GetMapping("/activos")
+    @PreAuthorize("hasAnyRole('JEFE_TALLER', 'MECANICO')")
+    public ResponseEntity<List<ProveedorResponse>> listarActivos() {
+        return ResponseEntity.ok(proveedorService.listarActivos());
     }
 }
