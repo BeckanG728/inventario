@@ -68,7 +68,9 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Override
     @Transactional
     public UsuarioResponse actualizar(Long id, ActualizarUsuarioRequest request) {
-        Usuario usuario = obtenerUsuario(id);
+        usuarioRepository.bloquearCambiosAdministrativos();
+        Usuario usuario = usuarioRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new UsuarioNotFoundException(id));
         UserRole nuevoRol = resolverRol(request.role());
         boolean nuevoActivo = request.activo();
 
@@ -78,6 +80,9 @@ public class UsuarioServiceImpl implements UsuarioService {
 
         Rol rol = rolRepository.findByNombre(nuevoRol.name())
                 .orElseThrow(() -> new IllegalStateException("Rol no configurado: " + nuevoRol.name()));
+        if ((usuario.isActivo() && !nuevoActivo) || !usuario.getRol().getNombre().equals(nuevoRol.name())) {
+            usuario.setVersionSesion(Math.incrementExact(usuario.getVersionSesion()));
+        }
         usuario.setRol(rol);
         usuario.setActivo(nuevoActivo);
 
@@ -87,8 +92,10 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Override
     @Transactional
     public UsuarioResponse resetPassword(Long id, ResetPasswordRequest request) {
-        Usuario usuario = obtenerUsuario(id);
+        Usuario usuario = usuarioRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new UsuarioNotFoundException(id));
         usuario.setPassword(passwordEncoder.encode(request.password()));
+        usuario.setVersionSesion(Math.incrementExact(usuario.getVersionSesion()));
         return userMapper.toUsuarioResponse(usuario);
     }
 
@@ -98,7 +105,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     private boolean esUltimoAdminActivo(Usuario usuario, UserRole nuevoRol, boolean nuevoActivo) {
-        boolean esAdminActual = UserRole.ADMIN.name().equals(usuario.getRol().getNombre());
+        boolean esAdminActual = usuario.isActivo() && UserRole.ADMIN.name().equals(usuario.getRol().getNombre());
         boolean dejaDeSerAdminActivo = esAdminActual && (!nuevoActivo || nuevoRol != UserRole.ADMIN);
         if (!dejaDeSerAdminActivo) {
             return false;

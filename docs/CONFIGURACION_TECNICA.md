@@ -60,6 +60,18 @@ Al arrancar, `AdminSeeder` crea el usuario `ADMIN` si no existe, usando `ADMIN_U
 `ADMIN` definido en la migración inicial. Si el rol `ADMIN` no existe, el arranque falla con un mensaje `FATAL`.
 Origen: RN111.
 
+### 2.3 Proxy y límite de inicio de sesión
+
+El backend limita por la IP del par TCP y por nombre de usuario. Detrás de un proxy, las solicitudes comparten el
+límite por IP del proxy. Si se requiere limitar por IP de cliente, aplica ese límite en el proxy de confianza.
+Los contadores del backend se mantienen en memoria por instancia.
+
+### 2.4 Reintentos de movimientos
+
+Los clientes pueden enviar un UUID en `Idempotency-Key` al registrar consumos, entradas o ajustes. Reenvía el
+mismo UUID y cuerpo cuando se desconozca si la solicitud se confirmó. El backend guarda la respuesta junto con el
+movimiento en la misma transacción. Reutilizar el UUID con otro cuerpo en la misma operación y cuenta devuelve 409.
+
 ## 3. Zona horaria y representación de fechas
 
 | Elemento | Decisión | Origen |

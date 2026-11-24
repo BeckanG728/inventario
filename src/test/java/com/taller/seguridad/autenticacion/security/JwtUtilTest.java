@@ -22,7 +22,7 @@ class JwtUtilTest {
 
     @Test
     void generateToken_includesSubjectUsernameAndRole() {
-        String token = jwtUtil.generateToken(7L, "MECANICO", "carlos");
+        String token = jwtUtil.generateToken(7L, "MECANICO", "carlos", 0L);
         Claims claims = jwtUtil.parse(token);
 
         assertEquals("7", claims.getSubject());
@@ -34,7 +34,7 @@ class JwtUtilTest {
 
     @Test
     void parse_withWrongSecret_fails() {
-        String token = jwtUtil.generateToken(1L, "MECANICO", "a");
+        String token = jwtUtil.generateToken(1L, "MECANICO", "a", 0L);
         JwtUtil other = new JwtUtil(appConfig("b".repeat(32), 3600L));
 
         assertThrows(JwtException.class, () -> other.parse(token));
@@ -43,7 +43,7 @@ class JwtUtilTest {
     @Test
     void parse_expiredToken_throwsExpiredJwtException() {
         JwtUtil shortLived = new JwtUtil(appConfig("a".repeat(32), -1L));
-        String token = shortLived.generateToken(1L, "MECANICO", "a");
+        String token = shortLived.generateToken(1L, "MECANICO", "a", 0L);
 
         assertThrows(ExpiredJwtException.class, () -> jwtUtil.parse(token));
     }

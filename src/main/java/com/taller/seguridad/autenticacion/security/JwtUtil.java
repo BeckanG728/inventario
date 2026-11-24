@@ -17,12 +17,13 @@ import java.util.Date;
 public class JwtUtil {
     private final SeguridadProperties appConfig;
 
-    public String generateToken(Long userId, String role, String username) {
+    public String generateToken(Long userId, String role, String username, long versionSesion) {
         Instant now = Instant.now();
         return Jwts.builder()
                 .subject(String.valueOf(userId))
                 .claim("username", username)
                 .claim("role", role)
+                .claim("sv", versionSesion)
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plusSeconds(appConfig.getJwtExpiration())))
                 .signWith(signingKey(), Jwts.SIG.HS256)

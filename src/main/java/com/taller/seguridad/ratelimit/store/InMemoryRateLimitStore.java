@@ -6,7 +6,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /** Implementación en memoria, válida mientras la aplicación tenga una sola instancia. */
@@ -30,21 +29,18 @@ public class InMemoryRateLimitStore implements RateLimitStore {
     @Override
     public Resultado incrementar(String clave, Duration ventana) {
         Instant ahora = clock.instant();
-        AtomicInteger contador = new AtomicInteger();
 
-        ventanas.compute(clave, (ignorado, actual) -> {
+
+        Ventana estado = ventanas.compute(clave, (ignorado, actual) -> {
             if (actual == null || !ahora.isBefore(actual.expiraEn())) {
-                contador.set(1);
                 return new Ventana(ahora.plus(ventana), 1);
             }
-            contador.set(actual.contador() + 1);
             return new Ventana(actual.expiraEn(), actual.contador() + 1);
         });
 
         limpiarVentanasVencidas(ahora);
-        Ventana estado = ventanas.get(clave);
         long reintentar = Math.max(1, Duration.between(ahora, estado.expiraEn()).getSeconds());
-        return new Resultado(contador.get(), reintentar);
+        return new Resultado(estado.contador(), reintentar);
     }
 
     private void limpiarVentanasVencidas(Instant ahora) {

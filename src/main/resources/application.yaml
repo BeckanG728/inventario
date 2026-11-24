@@ -20,6 +20,7 @@ spring:
 
 server:
   port: ${SERVER_PORT}
+  forward-headers-strategy: none
 
 
 jwt:

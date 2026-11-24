@@ -34,6 +34,7 @@ public class UsuarioDetailsServiceImpl implements UsuarioDetailsService {
                 usuario.getUsername(),
                 usuario.getPassword(),
                 usuario.isActivo(),
-                usuario.getRol().getNombre());
+                usuario.getRol().getNombre(),
+                usuario.getVersionSesion());
     }
 }

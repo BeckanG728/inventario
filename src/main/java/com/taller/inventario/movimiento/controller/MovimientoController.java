@@ -9,7 +9,9 @@ import com.taller.inventario.movimiento.enums.TipoMovimiento;
 import com.taller.inventario.movimiento.service.MovimientoService;
 import com.taller.inventario.movimiento.service.ReporteMovimientosService;
 import com.taller.seguridad.api.ActorAutenticado;
+import com.taller.inventario.api.impl.OperacionIdempotente;
 import jakarta.validation.Valid;
+import java.util.UUID;
 import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -20,6 +22,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -33,18 +36,24 @@ public class MovimientoController {
     private final MovimientoService movimientoService;
     private final ReporteMovimientosService reporteMovimientosService;
 
+    private final OperacionIdempotente operacionIdempotente;
+
     @PostMapping("/ajuste")
     public ResponseEntity<MovimientoResponse> ajuste(@Valid @RequestBody AjusteRequest request,
-                                                     @AuthenticationPrincipal ActorAutenticado actor) {
+                                                     @AuthenticationPrincipal ActorAutenticado actor,
+            @RequestHeader(value = "Idempotency-Key", required = false) UUID clave) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(movimientoService.ajuste(request, actor.id()));
+                .body(operacionIdempotente.ejecutar(actor.id(), "ajuste", clave, request,
+                        MovimientoResponse.class, () -> movimientoService.ajuste(request, actor.id())));
     }
 
     @PostMapping("/entrada")
     public ResponseEntity<EntradaResponse> entrada(@Valid @RequestBody EntradaRequest request,
-                                                   @AuthenticationPrincipal ActorAutenticado actor) {
+                                                   @AuthenticationPrincipal ActorAutenticado actor,
+            @RequestHeader(value = "Idempotency-Key", required = false) UUID clave) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(movimientoService.entrada(request, actor.id()));
+                .body(operacionIdempotente.ejecutar(actor.id(), "entrada", clave, request,
+                        EntradaResponse.class, () -> movimientoService.entrada(request, actor.id())));
     }
 
     /** Reporte paginado de movimientos del dominio de inventario. */

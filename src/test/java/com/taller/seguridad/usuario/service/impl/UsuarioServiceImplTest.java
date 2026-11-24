@@ -47,7 +47,7 @@ class UsuarioServiceImplTest {
     @Test
     void actualizar_ultimoAdminDesactivar_lanzaUltimoAdminActivoException() {
         Usuario admin = usuario(1L, "ADMIN");
-        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(admin));
+        when(usuarioRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(admin));
         when(usuarioRepository.countByActivoTrueAndRolNombre("ADMIN")).thenReturn(1L);
 
         assertThrows(UltimoAdminActivoException.class,
@@ -59,7 +59,7 @@ class UsuarioServiceImplTest {
     @Test
     void actualizar_ultimoAdminCambiarRol_lanzaUltimoAdminActivoException() {
         Usuario admin = usuario(1L, "ADMIN");
-        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(admin));
+        when(usuarioRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(admin));
         when(usuarioRepository.countByActivoTrueAndRolNombre("ADMIN")).thenReturn(1L);
 
         assertThrows(UltimoAdminActivoException.class,
@@ -70,7 +70,7 @@ class UsuarioServiceImplTest {
     void actualizar_conOtroAdminActivo_permiteDesactivar() {
         Usuario admin = usuario(1L, "ADMIN");
         Rol rolAdmin = new Rol("ADMIN");
-        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(admin));
+        when(usuarioRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(admin));
         when(usuarioRepository.countByActivoTrueAndRolNombre("ADMIN")).thenReturn(2L);
         when(rolRepository.findByNombre("ADMIN")).thenReturn(Optional.of(rolAdmin));
         when(userMapper.toUsuarioResponse(admin)).thenReturn(respuesta(admin, "ADMIN"));
@@ -90,7 +90,7 @@ class UsuarioServiceImplTest {
     @Test
     void resetPassword_codificaLaNuevaContraseña() {
         Usuario usuario = usuario(2L, "MECANICO");
-        when(usuarioRepository.findById(2L)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(usuario));
         when(passwordEncoder.encode("Pass123!")).thenReturn("hash-bcrypt");
         when(userMapper.toUsuarioResponse(usuario)).thenReturn(respuesta(usuario, "MECANICO"));
 

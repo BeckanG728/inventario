@@ -122,12 +122,12 @@ class AuthServiceTest {
 
     @Test
     void login_validCredentials_returnsToken() {
-        DetallesUsuario detalles = new DetallesUsuario(1L, "carlos", "hashed", true, "MECANICO");
+        DetallesUsuario detalles = new DetallesUsuario(1L, "carlos", "hashed", true, "MECANICO", 0L);
         Authentication authentication = UsernamePasswordAuthenticationToken.authenticated(
                 detalles, null, detalles.getAuthorities());
 
         when(authenticationManager.authenticate(any())).thenReturn(authentication);
-        when(jwtUtil.generateToken(1L, "MECANICO", "carlos")).thenReturn("jwt-token");
+        when(jwtUtil.generateToken(1L, "MECANICO", "carlos", 0L)).thenReturn("jwt-token");
         when(jwtUtil.getExpirationSeconds()).thenReturn(3600L);
         when(userMapper.toLoginResponse(any(DetallesUsuario.class), eq("jwt-token"), eq(3600L)))
                 .thenReturn(new LoginResponse("jwt-token", "Bearer", 3600L, 1L, "MECANICO"));

@@ -82,6 +82,23 @@ class JwtAuthFilterTest {
     }
 
     @Test
+    void oldSessionVersion_isRejected() throws Exception {
+        request.addHeader("Authorization", "Bearer old-token");
+        Claims claims = Jwts.claims().subject("1").add("sv", 1L).build();
+
+        when(jwtUtil.parse("old-token")).thenReturn(claims);
+        when(jwtUtil.extractUserId(claims)).thenReturn(1L);
+        when(usuarioDetailsService.loadUserByUserID(1L))
+                .thenReturn(new DetallesUsuario(1L, "carlos", "hashed", true, "MECANICO", 2L));
+
+        filter.doFilter(request, response, filterChain);
+
+        assertNull(SecurityContextHolder.getContext().getAuthentication());
+        assertEquals(TokenAuthenticationEntryPoint.TOKEN_INVALID,
+                request.getAttribute(TokenAuthenticationEntryPoint.JWT_ERROR_ATTRIBUTE));
+    }
+
+    @Test
     void disabledUser_setsAccountDisabled() throws Exception {
         request.addHeader("Authorization", "Bearer good-token");
         Claims claims = Jwts.claims().subject("1").build();
@@ -138,6 +155,6 @@ class JwtAuthFilterTest {
     }
 
     private DetallesUsuario detalles(Long id, boolean activo) {
-        return new DetallesUsuario(id, "carlos", "hashed", activo, "MECANICO");
+        return new DetallesUsuario(id, "carlos", "hashed", activo, "MECANICO", 0L);
     }
 }

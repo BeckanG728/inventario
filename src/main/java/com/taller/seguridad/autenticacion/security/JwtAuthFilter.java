@@ -48,6 +48,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 if (!detalles.isEnabled()) {
                     log.warn("Usuario inactivo — URI: {}", request.getRequestURI());
                     reject(request, TokenAuthenticationEntryPoint.ACCOUNT_DISABLED);
+                } else if (versionSesion(claims) != detalles.versionSesion()) {
+                    reject(request, TokenAuthenticationEntryPoint.TOKEN_INVALID);
                 } else {
                     ActorAutenticado actor = new ActorAutenticado(
                             detalles.id(), detalles.username(), detalles.getAuthorities());
@@ -71,6 +73,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private long versionSesion(Claims claims) {
+        Long version = claims.get("sv", Long.class);
+        return version == null ? 0L : version;
     }
 
     private void reject(HttpServletRequest request, String error) {
