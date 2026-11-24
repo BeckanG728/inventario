@@ -5,6 +5,7 @@ import com.taller.catalogo.categoria.entity.Categoria;
 import com.taller.catalogo.categoria.repository.CategoriaRepository;
 import com.taller.catalogo.producto.entity.Producto;
 import com.taller.catalogo.producto.repository.ProductoRepository;
+import com.taller.catalogo.producto.service.SkuGenerator;
 import com.taller.catalogo.proveedor.entity.Proveedor;
 import com.taller.catalogo.proveedor.repository.ProveedorRepository;
 import lombok.RequiredArgsConstructor;
@@ -12,14 +13,14 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
 public class PreparacionCatalogoImpl implements PreparacionCatalogo {
-
-    private static final String PREFIJO_SKU = "CP-";
 
     private final CategoriaRepository categoriaRepository;
     private final ProveedorRepository proveedorRepository;
@@ -62,6 +63,7 @@ public class PreparacionCatalogoImpl implements PreparacionCatalogo {
     @Transactional
     public List<ProductoCreado> crearProductos(List<ProductoDemo> productos) {
         List<Producto> nuevos = new ArrayList<>(productos.size());
+        Map<String, Integer> correlativos = new HashMap<>();
         for (ProductoDemo producto : productos) {
             Categoria categoria = categoriaRepository.findById(producto.categoriaId())
                     .orElseThrow(() -> new IllegalStateException("Categoría demo no encontrada"));
@@ -77,13 +79,13 @@ public class PreparacionCatalogoImpl implements PreparacionCatalogo {
                     proveedor);
             entidad.setDescripcion(producto.descripcion());
             entidad.setCostoUltimaCompra(producto.costoUltimaCompra());
+            String prefijo = SkuGenerator.prefijo(producto.nombre(), producto.categoriaId());
+            int correlativo = correlativos.merge(prefijo, 1, Integer::sum);
+            entidad.setSku(SkuGenerator.generar(producto.nombre(), producto.categoriaId(), correlativo));
             nuevos.add(entidad);
         }
 
         List<Producto> guardados = productoRepository.saveAll(nuevos);
-        for (Producto producto : guardados) {
-            producto.setSku(PREFIJO_SKU + String.format(Locale.ROOT, "%06d", producto.getId()));
-        }
         return guardados.stream()
                 .map(p -> new ProductoCreado(p.getId(), p.getStockMinimo(), p.getCostoUltimaCompra(),
                         p.getProveedor().getId()))

@@ -1,31 +1,30 @@
 package com.taller.catalogo.producto.service.impl;
 
+import com.taller.catalogo.categoria.entity.Categoria;
 import com.taller.catalogo.categoria.repository.CategoriaRepository;
+import com.taller.catalogo.proveedor.entity.Proveedor;
 import com.taller.catalogo.proveedor.repository.ProveedorRepository;
-import com.taller.compartido.exception.DuplicateResourceException;
-import com.taller.inventario.api.HistorialMovimientos;
 import com.taller.catalogo.producto.dto.request.CreateProductoRequest;
 import com.taller.catalogo.producto.dto.request.UpdateProductoRequest;
 import com.taller.catalogo.producto.entity.Producto;
 import com.taller.catalogo.producto.mapper.ProductoMapper;
 import com.taller.catalogo.producto.repository.ProductoRepository;
+import com.taller.inventario.api.HistorialMovimientos;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Optional;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * RN101 — el código de producto es único y su incumplimiento responde 409 DUPLICATE_RESOURCE.
+ * RN101 — el código de producto lo genera el backend con el patrón PRD-nnnn.
  */
 @ExtendWith(MockitoExtension.class)
 class ProductoServiceImplTest {
@@ -44,31 +43,42 @@ class ProductoServiceImplTest {
     @InjectMocks
     private ProductoServiceImpl service;
 
-    @Test
-    void crear_codigoDuplicado_lanzaDuplicateResourceException() {
-        when(productoRepository.existsByCodigo("FIL-001")).thenReturn(true);
-        CreateProductoRequest request = new CreateProductoRequest(
-                " FIL-001 ", "Filtro de aceite", null, "UNIDAD", 10, 3L, 7L);
+    private Categoria categoria() {
+        return new Categoria("Filtros", null);
+    }
 
-        DuplicateResourceException ex = assertThrows(DuplicateResourceException.class, () -> service.crear(request));
-
-        assertEquals("Ya existe un producto con el código: FIL-001", ex.getMessage());
-        verify(productoRepository, never()).save(any());
+    private Proveedor proveedor() {
+        return new Proveedor("20123456789", "Proveedor Demo", null, null, null, null);
     }
 
     @Test
-    void actualizar_codigoDeOtroProducto_lanzaDuplicateResourceException() {
-        Producto producto = new Producto("FIL-001", "Filtro de aceite", "UNIDAD", 10, null, null);
-        producto.setId(12L);
+    void crear_generaCodigoConElCorrelativoSiguiente() {
+        when(categoriaRepository.findById(3L)).thenReturn(Optional.of(categoria()));
+        when(proveedorRepository.findById(7L)).thenReturn(Optional.of(proveedor()));
+        when(productoRepository.findMaxCodigo()).thenReturn("PRD-0012");
+        when(productoRepository.save(any(Producto.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        CreateProductoRequest request =
+                new CreateProductoRequest("Filtro de aceite", null, "UNIDAD", 10, 3L, 7L);
+        service.crear(request);
+
+        ArgumentCaptor<Producto> captor = ArgumentCaptor.forClass(Producto.class);
+        verify(productoRepository).save(captor.capture());
+        assertEquals("PRD-0013", captor.getValue().getCodigo());
+    }
+
+    @Test
+    void actualizar_noModificaElCodigoGenerado() {
+        Producto producto = new Producto("PRD-0001", "Filtro", "UNIDAD", 10, categoria(), proveedor());
         when(productoRepository.findById(12L)).thenReturn(Optional.of(producto));
         when(historialMovimientos.existePorProducto(12L)).thenReturn(false);
-        when(productoRepository.existsByCodigoAndIdNot("FIL-002", 12L)).thenReturn(true);
-        UpdateProductoRequest request = new UpdateProductoRequest(
-                "FIL-002", "Filtro de aceite", null, "UNIDAD", 10, null, 3L, 7L);
+        when(categoriaRepository.findById(3L)).thenReturn(Optional.of(categoria()));
+        when(proveedorRepository.findById(7L)).thenReturn(Optional.of(proveedor()));
 
-        DuplicateResourceException ex = assertThrows(DuplicateResourceException.class,
-                () -> service.actualizar(12L, request));
+        UpdateProductoRequest request =
+                new UpdateProductoRequest("Filtro nuevo", null, "UNIDAD", 10, null, 3L, 7L);
+        service.actualizar(12L, request);
 
-        assertEquals("Ya existe un producto con el código: FIL-002", ex.getMessage());
+        assertEquals("PRD-0001", producto.getCodigo());
     }
 }

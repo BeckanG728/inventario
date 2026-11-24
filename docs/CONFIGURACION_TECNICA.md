@@ -115,25 +115,28 @@ espera. La transacción garantiza que no se produzcan descuentos parciales.
 | Acceso a datos | Spring Data JPA; `open-in-view: false` | Arquitectura |
 | Stock | `stockActual` y `stockMinimo` como enteros; el stock inicial es 0 | RN106 |
 | Costo | `costoUltimaCompra` con precisión 12 y escala 2 | RN203 |
-| Movimiento | Conserva tipo, producto, cantidad/variación, stock anterior/posterior, fecha, usuario, costo y motivo | RN208 |
-| Código de producto | Restricción única en base de datos | RN101 |
-| SKU | Se genera como `CP-` seguido de 6 dígitos del identificador (`%06d`) después de guardar el producto | RN106 |
+| Movimiento | Conserva tipo, producto, cantidad/variación, stock anterior/posterior, fecha, usuario, costo unitario y motivo. El costo es real en entradas y snapshot de `costoUltimaCompra` en consumos y ajustes | RN208 |
+| Código de producto | Generado por el backend con `PRD-nnnn` (correlativo global) y restricción única en base de datos | RN101 |
+| SKU | `AAA-ccc-nnnn`: siglas del nombre, id de categoría (`%03d`) y correlativo (`%04d`) dentro de ese prefijo. Se calcula antes de persistir, tanto en creación real como en datos demo | RN106 |
 | Consumo | Conserva fecha, finalidad, referencia opcional y usuario; se relaciona con los movimientos generados | RN205, RN208 |
 
-La generación del SKU a partir del identificador es una decisión de implementación; no forma parte de la regla de
-negocio del stock inicial.
+El correlativo se obtiene del mayor SKU existente para ese prefijo (`findMaxSkuByPrefijo`) en creación real, y de un
+contador en memoria durante la generación demo. La restricción `UNIQUE` de la columna resuelve la ventana de
+concurrencia entre la comprobación y el guardado. El patrón del SKU es una decisión de implementación; no forma parte
+de la regla de negocio del stock inicial, y no se regenera si cambian categoría o proveedor.
 
 ## 7. Arquitectura y decisiones de diseño
 
 | Decisión | Descripción |
 |----------|-------------|
-| Organización por dominio | Paquetes `catalogo`, `inventario`, `controlstock`, `reportes`, `seguridad` y `auditoria`, más `compartido`, `configuracion` e `inicializacion`. |
-| Organización interna | Cada dominio agrupa sus capacidades (por ejemplo `seguridad/autenticacion`, `seguridad/usuario`, `reportes/consulta`, `reportes/exportacion`, `controlstock/alerta`, `controlstock/stockminimo`) y dentro de ellas separa controlador, servicio, DTO, entidad y repositorio según corresponda. |
-| Lógica pura | `ValorInventarioCalculator`, `EstadisticasBucketing` y `BajoStockAgrupador` no dependen de Spring ni de la base de datos. |
+| Organización por dominio | Paquetes `catalogo`, `inventario`, `monitoreo`, `reportes`, `seguridad` y `auditoria`, más `compartido`, `configuracion` e `inicializacion`. |
+| Organización interna | Cada dominio agrupa sus capacidades (por ejemplo `seguridad/autenticacion`, `seguridad/usuario`, `reportes/consulta/controller` (único controller para los 5 endpoints de `/api/reportes`), `reportes/exportacion` (exporters y servicio), `monitoreo/controller` (único controller para alertas y existencias), `monitoreo/alerta`, `monitoreo/existencia`, `catalogo/stockminimo`) y dentro de ellas separa controlador, servicio, DTO, entidad y repositorio según corresponda. |
+| Lógica pura | `ValorInventarioCalculator`, `EstadisticasBucketing` y `EstadoStock` no dependen de Spring ni de la base de datos. |
 | Mapeo | `ProductoMapper` (MapStruct) construye las respuestas de producto, incluido `stockCritico`. |
 | Seguridad sin estado | Filtro JWT antes del filtro de autenticación de Spring; CSRF deshabilitado; sesiones `STATELESS`. |
 | Rate limiting | `LoginRateLimitFilter` antes de `JwtAuthFilter` (IP y username) y `UsuarioRateLimitFilter` después (usuario de la BD). Estado en memoria detrás de `RateLimitStore`. |
 | Manejo de errores | `ErrorCode` y `compartido/error` unifican el contrato para `GlobalExceptionHandler`, `ErrorResponseWriter`, seguridad, rate limiting y auditoría; ver [TABLA_ERRORES.md](TABLA_ERRORES.md). |
+| Datos demo | `DemoData` mantiene catálogos relacionales: tipo → categoría, unidades, costos y cantidades por reposición. Unidad, categoría y costo se derivan del tipo, no se eligen al azar. Los consumos se generan desde `SERVICIOS`, excluyendo herramientas. Entradas, consumos y ajustes se planifican como eventos y se procesan en orden cronológico a lo largo de 540 días (apertura concentrada al inicio, reposiciones repartidas), con `costoUnitario` en los tres tipos, para que los reportes de costos por período tengan datos coherentes. |
 | Prefijo de API | `/api`; respuestas JSON; fechas `Instant` en UTC. |
 
 ## 8. Verificación

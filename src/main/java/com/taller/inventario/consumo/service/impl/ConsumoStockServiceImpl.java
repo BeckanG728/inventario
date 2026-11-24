@@ -58,6 +58,8 @@ public class ConsumoStockServiceImpl implements ConsumoStockService {
                     motivo);
             movimiento.setCantidad(item.cantidad());
             movimiento.setConsumoId(consumoId);
+            // RN208: snapshot del costo vigente al momento del consumo, para valorar la salida.
+            movimiento.setCostoUnitario(resultado.producto().costoUltimaCompra());
 
             movimientos.add(movimientoInventarioRepository.save(movimiento));
         }

@@ -1,6 +1,7 @@
 package com.taller.inicializacion.service;
 
 import com.taller.catalogo.api.PreparacionCatalogo;
+import com.taller.catalogo.producto.service.CodigoGenerator;
 import com.taller.catalogo.api.PreparacionCatalogo.CategoriaDemo;
 import com.taller.catalogo.api.PreparacionCatalogo.EstadoProductoDemo;
 import com.taller.catalogo.api.PreparacionCatalogo.ProductoCreado;
@@ -103,23 +104,53 @@ public class DemoDataService {
             razonSocialPorProveedor.put(proveedorIds.get(i), proveedoresDemo.get(i).razonSocial());
         }
 
+        Map<String, Long> idPorCategoriaBase = new HashMap<>();
+        for (int i = 0; i < categoriaIds.size(); i++) {
+            idPorCategoriaBase.put(DemoData.CATEGORIAS_BASE.get(i), categoriaIds.get(i));
+        }
+        Map<String, List<String>> tiposPorCategoria = new HashMap<>();
+        for (String tipo : DemoData.TIPOS_PRODUCTO) {
+            String nombreCategoria = DemoData.CATEGORIA_POR_TIPO.get(tipo);
+            if (nombreCategoria != null && idPorCategoriaBase.containsKey(nombreCategoria)) {
+                tiposPorCategoria.computeIfAbsent(nombreCategoria, clave -> new ArrayList<>()).add(tipo);
+            }
+        }
+        List<String> tiposPlanificados = planificarTipos(
+                faker, tiposPorCategoria, DemoData.CATEGORIAS_BASE.subList(0, categoriaIds.size()));
+
         List<ProductoDemo> productosDemo = new ArrayList<>(props.getProductos());
         for (int i = 0; i < props.getProductos(); i++) {
-            String nombre = generarNombreProducto(faker);
-            String unidadMedida = faker.options().option(DemoData.UNIDADES.toArray(String[]::new));
+            String tipo = tiposPlanificados.get(i);
+            List<String> unidades = DemoData.UNIDADES_POR_TIPO.get(tipo);
+            DemoData.RangoCosto rangoCosto = DemoData.COSTOS_POR_TIPO.get(tipo);
+            if (unidades == null || unidades.isEmpty() || rangoCosto == null) {
+                throw new IllegalStateException("FATAL: catálogo demo incompleto para el tipo " + tipo);
+            }
+            String unidadMedida = faker.options().option(unidades.toArray(String[]::new));
             Integer stockMinimo = faker.number().numberBetween(5, 50);
             String descripcion = truncar(faker.lorem().sentence(10), 500);
-            BigDecimal costo = BigDecimal.valueOf(faker.number().numberBetween(500, 50_000), 2);
-            Long categoriaId = categoriaIds.get(faker.number().numberBetween(0, categoriaIds.size() - 1));
+            BigDecimal costo = BigDecimal.valueOf(faker.number().numberBetween(
+                    (int) rangoCosto.minimoCentimos(), (int) rangoCosto.maximoCentimos()), 2);
+            Long categoriaId = idPorCategoriaBase.get(DemoData.CATEGORIA_POR_TIPO.get(tipo));
+            if (categoriaId == null) {
+                throw new IllegalStateException(
+                        "FATAL: la categoría del tipo " + tipo + " no está configurada en el seed");
+            }
             Long proveedorId = proveedorIds.get(faker.number().numberBetween(0, proveedorIds.size() - 1));
             productosDemo.add(new ProductoDemo(
-                    String.format(Locale.ROOT, "PRD-%06d", i + 1),
-                    nombre, descripcion, unidadMedida, stockMinimo, costo, categoriaId, proveedorId));
+                    CodigoGenerator.generar(i + 1),
+                    generarNombreProducto(faker, tipo), descripcion, unidadMedida,
+                    stockMinimo, costo, categoriaId, proveedorId));
         }
         List<ProductoCreado> productos = preparacionCatalogo.crearProductos(productosDemo);
 
+        Map<Long, String> tipoPorProducto = new HashMap<>();
+        for (int i = 0; i < productos.size(); i++) {
+            tipoPorProducto.put(productos.get(i).id(), tiposPlanificados.get(i));
+        }
+
         Historial historial = generarHistorial(
-                faker, usuarios, productos, razonSocialPorProveedor);
+                faker, usuarios, productos, razonSocialPorProveedor, tipoPorProducto);
 
         log.info("Datos demo generados: {} categorías, {} proveedores, {} productos, {} entradas, "
                         + "{} consumos, {} ajustes, {} movimientos",
@@ -136,6 +167,14 @@ public class DemoDataService {
             throw new IllegalStateException("FATAL: SEED_DEMO_ENTRADAS y SEED_DEMO_CONSUMOS deben ser "
                     + "mayores que cero y SEED_DEMO_AJUSTES no puede ser negativo");
         }
+        if (props.getCategorias() > DemoData.CATEGORIAS_BASE.size()) {
+            throw new IllegalStateException("FATAL: SEED_DEMO_CATEGORIAS no puede superar "
+                    + DemoData.CATEGORIAS_BASE.size());
+        }
+        if (props.getProductos() < 2 * props.getCategorias()) {
+            throw new IllegalStateException("FATAL: SEED_DEMO_PRODUCTOS debe ser al menos el doble de "
+                    + "SEED_DEMO_CATEGORIAS para garantizar dos productos por categoría");
+        }
         if (props.getUsuarios().getJefe() == null || props.getUsuarios().getJefe().isBlank()) {
             throw new IllegalStateException("FATAL: SEED_DEMO_JEFE es obligatorio");
         }
@@ -148,39 +187,65 @@ public class DemoDataService {
         }
     }
 
-    private String generarNombreProducto(Faker faker) {
-        String tipo = faker.options().option(DemoData.TIPOS_PRODUCTO.toArray(String[]::new));
-        String marca = faker.vehicle().manufacturer();
-        String modelo = faker.vehicle().model();
-        return truncar(tipo + " " + marca + " " + modelo, 150);
+    /** Garantiza al menos dos tipos por categoría antes de completar con tipos aleatorios. */
+    private List<String> planificarTipos(Faker faker, Map<String, List<String>> tiposPorCategoria,
+                                         List<String> categorias) {
+        List<String> planificados = new ArrayList<>(props.getProductos());
+        for (String categoria : categorias) {
+            List<String> tipos = tiposPorCategoria.get(categoria);
+            if (tipos == null || tipos.isEmpty()) {
+                throw new IllegalStateException("FATAL: no hay tipos de producto para la categoría " + categoria);
+            }
+            for (int j = 0; j < 2; j++) {
+                planificados.add(tipos.get(faker.number().numberBetween(0, tipos.size())));
+            }
+        }
+        // Solo tipos cuyas categorías están configuradas; si no, el id de categoría sería nulo.
+        List<String> todos = tiposPorCategoria.values().stream()
+                .flatMap(List::stream)
+                .distinct()
+                .toList();
+        while (planificados.size() < props.getProductos()) {
+            planificados.add(faker.options().option(todos.toArray(String[]::new)));
+        }
+        Collections.shuffle(planificados, new Random(props.getSemilla() + 3));
+        return planificados;
+    }
+
+    private String generarNombreProducto(Faker faker, String tipo) {
+        String vehiculo = faker.options().option(DemoData.VEHICULOS_COMUNES.toArray(String[]::new));
+        return truncar(tipo + " " + vehiculo, 150);
     }
 
     private Historial generarHistorial(Faker faker, UsuariosDemo usuarios,
                                        List<ProductoCreado> productosCreados,
-                                       Map<Long, String> razonSocialPorProveedor) {
+                                       Map<Long, String> razonSocialPorProveedor,
+                                       Map<Long, String> tipoPorProducto) {
         Instant ahora = Instant.now(clock);
-        Instant inicioEntradas = ahora.minus(540, ChronoUnit.DAYS);
-        Instant inicioConsumos = ahora.minus(330, ChronoUnit.DAYS);
-        Instant finEntradas = inicioConsumos.minus(1, ChronoUnit.DAYS);
+        Instant inicioHistorial = ahora.minus(540, ChronoUnit.DAYS);
 
         Map<Long, Integer> stock = new HashMap<>();
         for (ProductoCreado producto : productosCreados) {
             stock.put(producto.id(), 0);
         }
 
-        List<MovimientoDemo> movimientos = new ArrayList<>();
-        int totalEntradas = generarEntradas(faker, usuarios.jefe(), productosCreados,
-                razonSocialPorProveedor, stock, movimientos, inicioEntradas, finEntradas);
-
+        // Todas las operaciones se planifican primero y se procesan en orden cronológico,
+        // de modo que entradas y salidas se intercalen y los stocks anterior/posterior sean coherentes.
         List<EventoHistorial> eventos = new ArrayList<>();
-        generarConsumos(faker, usuarios, productosCreados, inicioConsumos, ahora, eventos);
+        int totalEntradas = generarEntradas(faker, productosCreados, razonSocialPorProveedor,
+                tipoPorProducto, eventos, inicioHistorial, ahora);
+        generarConsumos(faker, usuarios, productosCreados, tipoPorProducto,
+                inicioHistorial.plus(30, ChronoUnit.DAYS), ahora, eventos);
         generarAjustes(faker, productosCreados, ahora.minus(90, ChronoUnit.DAYS), ahora, eventos);
         eventos.sort(Comparator.comparing(EventoHistorial::fecha));
 
+        List<MovimientoDemo> movimientos = new ArrayList<>();
         int totalConsumos = 0;
         int totalAjustes = 0;
         for (EventoHistorial evento : eventos) {
-            if (evento instanceof EventoConsumo consumo) {
+            if (evento instanceof EventoEntrada entrada) {
+                procesarEntrada(entrada, usuarios.jefe(), stock, movimientos);
+            } else if (evento instanceof EventoConsumo consumo) {
                 totalConsumos += procesarConsumo(consumo, stock, movimientos);
             } else if (evento instanceof EventoAjuste ajuste) {
                 totalAjustes += procesarAjuste(ajuste, usuarios.jefe(), stock, movimientos);
@@ -193,66 +258,97 @@ public class DemoDataService {
         return new Historial(totalEntradas, totalConsumos, totalAjustes, movimientos.size());
     }
 
-    private int generarEntradas(Faker faker, UsuarioDemo jefe, List<ProductoCreado> productosCreados,
-                                Map<Long, String> razonSocialPorProveedor, Map<Long, Integer> stock,
-                                List<MovimientoDemo> movimientos, Instant desde, Instant hasta) {
-        List<EntradaProgramada> programadas = new ArrayList<>(props.getEntradas());
+    private int generarEntradas(Faker faker, List<ProductoCreado> productosCreados,
+                                Map<Long, String> razonSocialPorProveedor,
+                                Map<Long, String> tipoPorProducto, List<EventoHistorial> eventos,
+                                Instant desde, Instant hasta) {
         int base = Math.min(props.getEntradas(), productosCreados.size());
-        for (int i = 0; i < base; i++) {
-            programadas.add(new EntradaProgramada(
-                    productosCreados.get(i),
-                    fechaAleatoria(faker, desde, hasta),
-                    faker.number().numberBetween(20, 100)));
-        }
-        for (int i = base; i < props.getEntradas(); i++) {
-            programadas.add(new EntradaProgramada(
-                    productosCreados.get(faker.number().numberBetween(0, productosCreados.size() - 1)),
-                    fechaAleatoria(faker, desde, hasta),
-                    faker.number().numberBetween(20, 100)));
-        }
-        programadas.sort(Comparator.comparing(EntradaProgramada::fecha));
 
-        for (EntradaProgramada entrada : programadas) {
-            ProductoCreado producto = entrada.producto();
-            int anterior = stock.get(producto.id());
-            int posterior = anterior + entrada.cantidad();
-            movimientos.add(new MovimientoDemo(
-                    TipoMovimiento.ENTRADA,
-                    entrada.fecha(),
-                    producto.id(),
-                    jefe.id(),
-                    entrada.cantidad(),
-                    entrada.cantidad(),
-                    anterior,
-                    posterior,
-                    producto.costoUltimaCompra(),
-                    "Entrada de proveedor " + razonSocialPorProveedor.get(producto.proveedorId()),
-                    null));
-            stock.put(producto.id(), posterior);
+        // Apertura: una entrada por producto al inicio de la línea de tiempo para garantizar stock inicial.
+        Instant finApertura = desde.plus(60, ChronoUnit.DAYS);
+        for (int i = 0; i < base; i++) {
+            ProductoCreado producto = productosCreados.get(i);
+            eventos.add(new EventoEntrada(
+                    fechaAleatoria(faker, desde, finApertura),
+                    producto,
+                    DemoData.cantidadEntrada(tipoPorProducto.get(producto.id()), faker),
+                    "Entrada inicial de " + razonSocialPorProveedor.get(producto.proveedorId())));
         }
-        return programadas.size();
+
+        // El resto se reparte a lo largo de todo el periodo, intercalado con consumos y ajustes.
+        for (int i = base; i < props.getEntradas(); i++) {
+            ProductoCreado producto = productosCreados.get(
+                    faker.number().numberBetween(0, productosCreados.size() - 1));
+            eventos.add(new EventoEntrada(
+                    fechaAleatoria(faker, desde, hasta),
+                    producto,
+                    DemoData.cantidadEntrada(tipoPorProducto.get(producto.id()), faker),
+                    "Entrada de proveedor " + razonSocialPorProveedor.get(producto.proveedorId())));
+        }
+        return props.getEntradas();
+    }
+
+    private void procesarEntrada(EventoEntrada evento, UsuarioDemo jefe,
+                                Map<Long, Integer> stock, List<MovimientoDemo> movimientos) {
+        ProductoCreado producto = evento.producto();
+        int anterior = stock.get(producto.id());
+        int posterior = anterior + evento.cantidad();
+        movimientos.add(new MovimientoDemo(
+                TipoMovimiento.ENTRADA,
+                evento.fecha(),
+                producto.id(),
+                jefe.id(),
+                evento.cantidad(),
+                evento.cantidad(),
+                anterior,
+                posterior,
+                producto.costoUltimaCompra(),
+                evento.motivo(),
+                null));
+        stock.put(producto.id(), posterior);
     }
 
     private void generarConsumos(Faker faker, UsuariosDemo usuarios,
-                                 List<ProductoCreado> productosCreados, Instant desde, Instant hasta,
+                                 List<ProductoCreado> productosCreados,
+                                 Map<Long, String> tipoPorProducto, Instant desde, Instant hasta,
                                  List<EventoHistorial> eventos) {
+        Map<String, List<ProductoCreado>> productosPorTipo = new HashMap<>();
+        for (ProductoCreado producto : productosCreados) {
+            String tipo = tipoPorProducto.get(producto.id());
+            if (tipo == null || DemoData.TIPOS_HERRAMIENTA.contains(tipo)) {
+                continue;
+            }
+            productosPorTipo.computeIfAbsent(tipo, clave -> new ArrayList<>()).add(producto);
+        }
+
+        DemoData.ServicioDemo[] servicios = DemoData.SERVICIOS.toArray(DemoData.ServicioDemo[]::new);
         for (int i = 0; i < props.getConsumos(); i++) {
+            DemoData.ServicioDemo servicio = faker.options().option(servicios);
             Instant fecha = fechaAleatoria(faker, desde, hasta);
             UsuarioDemo usuario = elegirUsuarioConsumo(faker, usuarios);
-            int cantidadItems = faker.number().numberBetween(2, 4);
-            List<ItemConsumo> items = new ArrayList<>(cantidadItems);
+
+            List<String> tipos = new ArrayList<>(servicio.productosFrecuentes());
+            tipos.addAll(servicio.productosOpcionales());
+
+            List<ItemConsumo> items = new ArrayList<>();
             Set<Long> usados = new HashSet<>();
-            while (items.size() < cantidadItems && usados.size() < productosCreados.size()) {
-                ProductoCreado producto = productosCreados.get(
-                        faker.number().numberBetween(0, productosCreados.size() - 1));
+            for (String tipo : tipos) {
+                List<ProductoCreado> candidatos = productosPorTipo.get(tipo);
+                if (candidatos == null || candidatos.isEmpty()) {
+                    continue;
+                }
+                ProductoCreado producto = candidatos.get(faker.number().numberBetween(0, candidatos.size()));
                 if (!usados.add(producto.id())) {
                     continue;
                 }
-                items.add(new ItemConsumo(producto, faker.number().numberBetween(1, 5)));
+                items.add(new ItemConsumo(producto, DemoData.cantidadConsumo(tipo, faker)));
+            }
+            if (items.isEmpty()) {
+                continue;
             }
             eventos.add(new EventoConsumo(
                     fecha,
-                    faker.options().option(DemoData.FINALIDADES.toArray(String[]::new)),
+                    servicio.finalidad(),
                     "Placa " + faker.number().digits(3) + "-" + faker.number().digits(3),
                     usuario,
                     items));
@@ -315,7 +411,7 @@ public class DemoDataService {
                     null,
                     anterior,
                     posterior,
-                    null,
+                    item.producto().costoUltimaCompra(),
                     evento.finalidad(),
                     consumoId));
             stock.put(item.producto().id(), posterior);
@@ -340,7 +436,7 @@ public class DemoDataService {
                 posterior - anterior,
                 anterior,
                 posterior,
-                null,
+                producto.costoUltimaCompra(),
                 evento.motivo(),
                 null));
         stock.put(producto.id(), posterior);
@@ -400,14 +496,15 @@ public class DemoDataService {
     private record Historial(int entradas, int consumos, int ajustes, int movimientos) {
     }
 
-    private record EntradaProgramada(ProductoCreado producto, Instant fecha, int cantidad) {
-    }
-
     private record ItemConsumo(ProductoCreado producto, int cantidad) {
     }
 
-    private sealed interface EventoHistorial permits EventoConsumo, EventoAjuste {
+    private sealed interface EventoHistorial permits EventoEntrada, EventoConsumo, EventoAjuste {
         Instant fecha();
+    }
+
+    private record EventoEntrada(Instant fecha, ProductoCreado producto, int cantidad,
+                                 String motivo) implements EventoHistorial {
     }
 
     private record EventoConsumo(Instant fecha, String finalidad, String referencia,

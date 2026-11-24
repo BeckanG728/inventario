@@ -3,14 +3,17 @@ package com.taller.configuracion;
 import com.taller.catalogo.producto.controller.ProductoController;
 import com.taller.catalogo.producto.dto.response.ProductoResponse;
 import com.taller.catalogo.producto.service.ProductoService;
-import com.taller.controlstock.alerta.controller.AlertaController;
-import com.taller.controlstock.alerta.service.AlertaService;
-import com.taller.controlstock.stockminimo.controller.StockMinimoController;
-import com.taller.controlstock.stockminimo.service.StockMinimoService;
-import com.taller.inventario.existencia.controller.ExistenciaController;
-import com.taller.inventario.existencia.service.ExistenciaService;
-import com.taller.reportes.consulta.controller.ReporteMovimientosController;
-import com.taller.reportes.consulta.service.ReporteMovimientosService;
+import com.taller.monitoreo.service.AlertaService;
+import com.taller.monitoreo.controller.MonitoreoController;
+import com.taller.catalogo.stockminimo.controller.StockMinimoController;
+import com.taller.catalogo.stockminimo.service.StockMinimoService;
+import com.taller.monitoreo.service.ExistenciaService;
+import com.taller.reportes.consulta.controller.ReporteController;
+import com.taller.reportes.consulta.service.InventarioValorService;
+import com.taller.reportes.exportacion.service.ReporteExportService;
+import com.taller.inventario.movimiento.controller.MovimientoController;
+import com.taller.inventario.movimiento.service.MovimientoService;
+import com.taller.inventario.movimiento.service.ReporteMovimientosService;
 import com.taller.reportes.dashboard.controller.DashboardController;
 import com.taller.reportes.dashboard.service.DashboardService;
 import com.taller.reportes.estadisticas.controller.EstadisticasController;
@@ -41,11 +44,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @WebMvcTest(controllers = {
         ProductoController.class,
-        ExistenciaController.class,
-        AlertaController.class,
+        MonitoreoController.class,
         StockMinimoController.class,
         DashboardController.class,
-        ReporteMovimientosController.class,
+        MovimientoController.class,
+        ReporteController.class,
         EstadisticasController.class
 })
 @Import({SecurityConfig.class, ErrorResponseWriter.class, TokenAuthenticationEntryPoint.class,
@@ -92,7 +95,16 @@ class SecurityAccessTest {
     private DashboardService dashboardService;
 
     @MockitoBean
+    private MovimientoService movimientoService;
+
+    @MockitoBean
     private ReporteMovimientosService reporteMovimientosService;
+
+    @MockitoBean
+    private InventarioValorService inventarioValorService;
+
+    @MockitoBean
+    private ReporteExportService reporteExportService;
 
     @MockitoBean
     private EstadisticasService estadisticasService;
@@ -103,6 +115,8 @@ class SecurityAccessTest {
                 org.mockito.ArgumentMatchers.anyInt(),
                 org.mockito.ArgumentMatchers.anyInt(),
                 org.mockito.ArgumentMatchers.any())).thenReturn(org.springframework.data.domain.Page.empty());
+        org.mockito.Mockito.when(existenciaService.listarActivos(
+                org.mockito.ArgumentMatchers.any())).thenReturn(org.springframework.data.domain.Page.empty());
     }
 
     // --- Sin autenticación -> 401 UNAUTHORIZED ---
@@ -110,10 +124,10 @@ class SecurityAccessTest {
     @Test
     void endpointsModificados_sinToken_devuelven401() throws Exception {
         mockMvc.perform(get("/api/productos")).andExpect(status().isUnauthorized());
-        mockMvc.perform(get("/api/existencias")).andExpect(status().isUnauthorized());
-        mockMvc.perform(get("/api/stock/alertas")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/monitoreo/existencias")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/monitoreo/alertas")).andExpect(status().isUnauthorized());
         mockMvc.perform(get("/api/dashboard")).andExpect(status().isUnauthorized());
-        mockMvc.perform(get("/api/reportes/movimientos")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/movimientos")).andExpect(status().isUnauthorized());
         mockMvc.perform(get("/api/estadisticas")).andExpect(status().isUnauthorized());
     }
 
@@ -128,8 +142,8 @@ class SecurityAccessTest {
                 .andExpect(jsonPath("$.message").value("No tiene permisos para realizar esta acción"))
                 .andExpect(jsonPath("$.endpoint").value("/api/productos"));
 
-        mockMvc.perform(get("/api/existencias")).andExpect(status().isForbidden());
-        mockMvc.perform(get("/api/stock/alertas")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/monitoreo/existencias")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/monitoreo/alertas")).andExpect(status().isForbidden());
     }
 
     // --- T4 y T5: ADMIN excluido de dashboard, reportes y estadísticas -> 403 FORBIDDEN ---
@@ -138,7 +152,7 @@ class SecurityAccessTest {
     @WithMockUser(roles = "ADMIN")
     void admin_dashboardYReportes_devuelve403() throws Exception {
         mockMvc.perform(get("/api/dashboard")).andExpect(status().isForbidden());
-        mockMvc.perform(get("/api/reportes/movimientos")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/movimientos")).andExpect(status().isForbidden());
         mockMvc.perform(get("/api/estadisticas")).andExpect(status().isForbidden());
     }
 
@@ -148,21 +162,18 @@ class SecurityAccessTest {
     @WithMockUser(roles = "MECANICO")
     void mecanico_dashboardYReportes_devuelve403() throws Exception {
         mockMvc.perform(get("/api/dashboard")).andExpect(status().isForbidden());
-        mockMvc.perform(get("/api/reportes/movimientos")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/movimientos")).andExpect(status().isForbidden());
         mockMvc.perform(get("/api/estadisticas")).andExpect(status().isForbidden());
     }
 
-    // --- T6: MECANICO accede a productos y alertas -> 200 OK; existencias -> 403 FORBIDDEN ---
+    // --- T6: MECANICO accede a productos, alertas y existencias -> 200 OK ---
 
     @Test
     @WithMockUser(roles = "MECANICO")
-    void mecanico_consultasInventario_sinExistencias() throws Exception {
+    void mecanico_consultasInventario() throws Exception {
         mockMvc.perform(get("/api/productos")).andExpect(status().isOk());
-        mockMvc.perform(get("/api/stock/alertas")).andExpect(status().isOk());
-        mockMvc.perform(get("/api/existencias?ids=1"))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.error").value("FORBIDDEN"))
-                .andExpect(jsonPath("$.endpoint").value("/api/existencias"));
+        mockMvc.perform(get("/api/monitoreo/alertas")).andExpect(status().isOk());
+        mockMvc.perform(get("/api/monitoreo/existencias")).andExpect(status().isOk());
     }
 
     // --- T4, T5, T6: JEFE_TALLER accede a todos ---
@@ -171,17 +182,17 @@ class SecurityAccessTest {
     @WithMockUser(roles = "JEFE_TALLER")
     void jefeTaller_todosLosEndpointsModificados_permiteAcceso() throws Exception {
         mockMvc.perform(get("/api/productos")).andExpect(status().isOk());
-        mockMvc.perform(get("/api/existencias?ids=1")).andExpect(status().isOk());
-        mockMvc.perform(get("/api/stock/alertas")).andExpect(status().isOk());
+        mockMvc.perform(get("/api/monitoreo/existencias")).andExpect(status().isOk());
+        mockMvc.perform(get("/api/monitoreo/alertas")).andExpect(status().isOk());
         mockMvc.perform(get("/api/dashboard")).andExpect(status().isOk());
-        mockMvc.perform(get("/api/reportes/movimientos")).andExpect(status().isOk());
+        mockMvc.perform(get("/api/movimientos")).andExpect(status().isOk());
         mockMvc.perform(get("/api/estadisticas")).andExpect(status().isOk());
     }
 
     @Test
     @WithMockUser(roles = "MECANICO")
     void mecanico_stockMinimo_devuelve403() throws Exception {
-        mockMvc.perform(put("/api/stock/producto/1/minimo")
+        mockMvc.perform(put("/api/productos/1/stock-minimo")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"nuevoStockMinimo\":5}"))
                 .andExpect(status().isForbidden());
@@ -195,7 +206,7 @@ class SecurityAccessTest {
                 .thenReturn(new ProductoResponse(1L, null, null, null, null, null,
                         0, 5, false, null, true, null, null, null, null));
 
-        mockMvc.perform(put("/api/stock/producto/1/minimo")
+        mockMvc.perform(put("/api/productos/1/stock-minimo")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"nuevoStockMinimo\":5}"))
                 .andExpect(status().isOk());

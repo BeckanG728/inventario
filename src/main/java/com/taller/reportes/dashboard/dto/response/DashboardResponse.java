@@ -1,6 +1,6 @@
 package com.taller.reportes.dashboard.dto.response;
 
-import com.taller.controlstock.alerta.dto.response.AlertaStock;
+import com.taller.monitoreo.dto.response.AlertaStock;
 import com.taller.inventario.movimiento.enums.TipoMovimiento;
 
 import java.math.BigDecimal;

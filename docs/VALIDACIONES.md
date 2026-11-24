@@ -47,8 +47,8 @@ restricción única de la base de datos.
 
 | ID | Elemento | Condición | Origen | Si incumple |
 |----|----------|-----------|--------|-------------|
-| VAL-PROD-01 | `codigo` | Obligatorio; máximo 50 caracteres; único | RN101 | `400 VALIDATION_ERROR`; `409 DUPLICATE_RESOURCE` |
-| VAL-PROD-02 | `codigo` en edición | Único excluyendo el propio producto | RN101 | `409 DUPLICATE_RESOURCE` |
+| VAL-PROD-01 | `codigo` | No se acepta en el body: el backend lo genera con `PRD-nnnn` y garantiza su unicidad | RN101 | — |
+| VAL-PROD-02 | `sku` | No se acepta en el body: el backend lo genera con `AAA-ccc-nnnn` | RN106 | — |
 | VAL-PROD-03 | `nombre` | Obligatorio; máximo 150 caracteres | Contrato de API | `400 VALIDATION_ERROR` |
 | VAL-PROD-04 | `descripcion` | Opcional; máximo 500 caracteres | Contrato de API | `400 VALIDATION_ERROR` |
 | VAL-PROD-05 | `unidadMedida` | Obligatoria; máximo 30 caracteres | RN103 | `400 VALIDATION_ERROR` |
@@ -59,7 +59,7 @@ restricción única de la base de datos.
 | VAL-PROD-10 | `nuevoStockMinimo` | Obligatorio; entero mayor o igual que 0 en la actualización específica del stock mínimo | RN104 | `400 VALIDATION_ERROR` |
 | VAL-PROD-11 | `stockActual` | No forma parte de los datos de alta o edición; el stock inicial es 0 y solo cambia por movimientos | RN106 | No se acepta como dato editable |
 | VAL-PROD-12 | Alias de identificadores | `idCategoria`, `categoriaId`, `idProveedor` y `proveedorId` se aceptan como alias de `id_categoria` e `id_proveedor` | Contrato de API | — |
-| VAL-PROD-13 | Edición con historial | Con movimientos registrados, solo se aceptan cambios en `nombre`, `descripcion` y `unidadMedida`; los demás campos deben enviarse sin cambios | RN118 | `400 VALIDATION_ERROR` |
+| VAL-PROD-13 | Edición con historial | Con movimientos registrados, solo se aceptan cambios en `nombre`, `descripcion` y `unidadMedida`; `stockMinimo`, `activo`, categoría y proveedor deben enviarse sin cambios | RN118 | `400 VALIDATION_ERROR` |
 
 La categoría y el proveedor se validan al crear el producto y cuando la edición propone uno distinto. Si el
 producto conserva la referencia actual, no se vuelve a exigir que esta esté activa.
@@ -98,16 +98,16 @@ producto conserva la referencia actual, no se vuelve a exigir que esta esté act
 
 | ID | Elemento | Condición | Origen | Si incumple |
 |----|----------|-----------|--------|-------------|
-| VAL-EXI-01 | `ids` | Obligatorio; no puede estar vacío | RN212 | `400 VALIDATION_ERROR` |
-| VAL-EXI-02 | `ids` | Los identificadores repetidos se ignoran; se consulta cada producto una sola vez | RN212 | — |
-| VAL-EXI-03 | Producto inexistente | Si algún identificador no corresponde a un producto, se rechaza la consulta | RN212 | `404 NOT_FOUND` |
-| VAL-EXI-04 | Producto inactivo | Si algún producto existe pero está inactivo, se rechaza la consulta | RN212 | `400 VALIDATION_ERROR` |
+| VAL-EXI-01 | Producto inactivo | Nunca se incluye en el listado; el endpoint no admite filtro `activo` | RN302 | — |
+| VAL-EXI-02 | `page`, `size` | Se normalizan a `>= 0` y `1–100` | RN212 | — |
+| VAL-EXI-03 | `estadoStock` | Solo `NORMAL`, `BAJO` o `SIN_STOCK` | RN309 | `400 VALIDATION_ERROR` |
+| VAL-EXI-04 | `categoria`, `proveedorId` | Deben ser identificadores numéricos válidos | RN212 | `400 VALIDATION_ERROR` |
 
 ## 9. Reportes y estadísticas
 
 | ID | Elemento | Condición | Origen | Si incumple |
 |----|----------|-----------|--------|-------------|
-| VAL-REP-01 | `desde`, `hasta` | Obligatorios en los reportes de movimientos y consumo; formato `yyyy-MM-dd`; `hasta` no puede ser anterior a `desde` | RN405 | `400 VALIDATION_ERROR` |
+| VAL-REP-01 | `desde`, `hasta` | Obligatorios en el reporte de movimientos; formato `yyyy-MM-dd`; `hasta` no puede ser anterior a `desde` | RN405 | `400 VALIDATION_ERROR` |
 | VAL-REP-02 | Rango de fechas | Ambos extremos son inclusivos: se incluye todo el día `desde` y todo el día `hasta` | RN405 | — |
 | VAL-REP-03 | `tipo` | Opcional; si se informa, debe ser `ENTRADA`, `CONSUMO` o `AJUSTE` | Contrato de API | `400 VALIDATION_ERROR` |
 | VAL-REP-04 | `page` | Entero; los valores negativos se normalizan a 0 | RN414 | `400 VALIDATION_ERROR` si el formato es inválido |
@@ -115,14 +115,17 @@ producto conserva la referencia actual, no se vuelve a exigir que esta esté act
 | VAL-REP-06 | `from`, `to` | Obligatorios en estadísticas; formato `yyyy-MM-dd`; `to` no puede ser anterior a `from` | RN405 | `400 VALIDATION_ERROR` |
 | VAL-REP-07 | `granularity` | Obligatorio en estadísticas; valores admitidos: `DAY`, `WEEK` o `MONTH` | RN405 | `400 VALIDATION_ERROR` |
 | VAL-REP-08 | Paginación del reporte de movimientos | Solo la lista de movimientos se pagina; los totales por tipo cubren todo el filtro y no cambian al cambiar de página | RN414 | — |
-| VAL-REP-09 | Reportes no paginados | Los reportes de consumo, valor de inventario y bajo stock, y todas las exportaciones, devuelven el resultado completo | RN414 | — |
+| VAL-REP-09 | Exportación sin paginar | La exportación de valor-inventario devuelve el contenido completo, sin paginar | RN412 | — |
+| VAL-REP-10 | `productoId` en `/api/estadisticas/por-tipo` | Opcional; si se informa, filtra las unidades y costos de ese producto | Contrato de API | `400 VALIDATION_ERROR` si el formato es inválido |
+| VAL-REP-11 | Costos en `/api/estadisticas/por-tipo` | `costoEntradas` y `costoConsumos` = `Σ(cantidad × costoUnitario)`; `costoAjustes` = 0; redondeo `HALF_UP` a 2 decimales; movimiento sin costo aporta 0 | RN208 | — |
+| VAL-REP-12 | `page`, `size` en `/api/reportes/valor-inventario` | `page` se normaliza a `>= 0`; `size` se limita a 1–100; default `10`. Los totales no dependen de la página | RN414 | `400 VALIDATION_ERROR` si el formato es inválido |
 
 ## 10. Exportaciones
 
 | ID | Elemento | Condición | Origen | Si incumple |
 |----|----------|-----------|--------|-------------|
 | VAL-EXP-01 | `formato` | Obligatorio; valores admitidos: `pdf`, `excel` o `xlsx`; no distingue mayúsculas | RN412 | `400 VALIDATION_ERROR` |
-| VAL-EXP-02 | Fechas de exportación | Las exportaciones de movimientos y consumo heredan las reglas de `desde` y `hasta` del reporte de origen | RN405, RN412 | `400 VALIDATION_ERROR` |
+| VAL-EXP-02 | Parámetros de exportación | La exportación de valor-inventario solo requiere `formato`; no hereda reglas de fechas | RN412 | — |
 | VAL-EXP-03 | Paginación en exportaciones | Las exportaciones ignoran `page` y `size` y exportan el contenido completo | RN414 | — |
 
 ## 11. Restricciones generales de representación

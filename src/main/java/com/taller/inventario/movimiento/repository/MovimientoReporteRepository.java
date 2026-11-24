@@ -2,6 +2,7 @@ package com.taller.inventario.movimiento.repository;
 
 import com.taller.inventario.movimiento.entity.MovimientoInventario;
 import com.taller.inventario.movimiento.enums.TipoMovimiento;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import org.springframework.data.domain.Page;
@@ -19,6 +20,33 @@ public interface MovimientoReporteRepository extends Repository<MovimientoInvent
 
         long getTotal();
     }
+
+    /** Fecha, tipo y unidades de cada movimiento del rango [start, end). */
+    interface FechaTipo {
+        Instant getFecha();
+
+        TipoMovimiento getTipo();
+
+        Integer getCantidad();
+
+        Integer getVariacion();
+
+        BigDecimal getCostoUnitario();
+    }
+
+    @Query("select m.fecha as fecha, m.tipo as tipo, m.cantidad as cantidad, m.variacion as variacion, "
+            + "m.costoUnitario as costoUnitario "
+            + "from MovimientoInventario m "
+            + "where m.fecha >= :start and m.fecha < :end")
+    List<FechaTipo> findFechaTipoBetween(@Param("start") Instant start, @Param("end") Instant end);
+
+    @Query("select m.fecha as fecha, m.tipo as tipo, m.cantidad as cantidad, m.variacion as variacion, "
+            + "m.costoUnitario as costoUnitario "
+            + "from MovimientoInventario m "
+            + "where m.fecha >= :start and m.fecha < :end and m.productoId = :productoId")
+    List<FechaTipo> findFechaTipoBetweenAndProducto(@Param("start") Instant start,
+                                                    @Param("end") Instant end,
+                                                    @Param("productoId") Long productoId);
 
     @Query("select m.fecha from MovimientoInventario m where m.fecha >= :start and m.fecha < :end")
     List<Instant> findFechasBetween(@Param("start") Instant start, @Param("end") Instant end);

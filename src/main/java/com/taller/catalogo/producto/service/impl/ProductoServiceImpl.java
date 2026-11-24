@@ -4,7 +4,6 @@ import com.taller.catalogo.categoria.entity.Categoria;
 import com.taller.catalogo.proveedor.entity.Proveedor;
 import com.taller.catalogo.categoria.repository.CategoriaRepository;
 import com.taller.catalogo.proveedor.repository.ProveedorRepository;
-import com.taller.compartido.exception.DuplicateResourceException;
 import com.taller.inventario.api.HistorialMovimientos;
 import com.taller.catalogo.producto.dto.request.CreateProductoRequest;
 import com.taller.catalogo.producto.dto.request.ProductoFiltro;
@@ -14,7 +13,9 @@ import com.taller.catalogo.producto.entity.Producto;
 import com.taller.catalogo.producto.exception.ProductoNotFoundException;
 import com.taller.catalogo.producto.mapper.ProductoMapper;
 import com.taller.catalogo.producto.repository.ProductoRepository;
+import com.taller.catalogo.producto.service.CodigoGenerator;
 import com.taller.catalogo.producto.service.ProductoService;
+import com.taller.catalogo.producto.service.SkuGenerator;
 import com.taller.catalogo.producto.specification.ProductoSpecification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -31,7 +32,6 @@ public class ProductoServiceImpl implements ProductoService {
 
     private static final String MENSAJE_SOLO_CAMPOS_PERMITIDOS =
             "El producto tiene movimientos registrados: solo se puede editar nombre, descripción y unidad de medida";
-    private static final String PREFIJO_SKU = "CP-";
     private static final int TAMANO_PAGINA_MAXIMO = 100;
 
     private final ProductoRepository productoRepository;
@@ -43,14 +43,11 @@ public class ProductoServiceImpl implements ProductoService {
     @Override
     @Transactional
     public ProductoResponse crear(CreateProductoRequest request) {
-        String codigo = request.codigo().trim();
-
-        if (productoRepository.existsByCodigo(codigo)) {
-            throw new DuplicateResourceException("Ya existe un producto con el código: " + codigo);
-        }
-
         Categoria categoria = obtenerCategoriaActiva(request.idCategoria());
         Proveedor proveedor = obtenerProveedorActivo(request.idProveedor());
+
+        String codigo = CodigoGenerator.generar(
+                CodigoGenerator.correlativoDe(productoRepository.findMaxCodigo()) + 1);
 
         Producto producto = new Producto(
                 codigo,
@@ -64,9 +61,12 @@ public class ProductoServiceImpl implements ProductoService {
         producto.setStockActual(0);
         producto.setActivo(true);
 
-        Producto guardado = productoRepository.save(producto);
-        guardado.setSku(generarSku(guardado.getId()));
+        String prefijo = SkuGenerator.prefijo(request.nombre().trim(), categoria.getId());
+        String maxSku = productoRepository.findMaxSkuByPrefijo(prefijo);
+        int correlativo = SkuGenerator.correlativoDe(maxSku) + 1;
+        producto.setSku(SkuGenerator.generar(request.nombre().trim(), categoria.getId(), correlativo));
 
+        Producto guardado = productoRepository.save(producto);
         return productoMapper.toResponse(guardado);
     }
 
@@ -161,9 +161,6 @@ public class ProductoServiceImpl implements ProductoService {
     }
 
     private void validarEdicionConHistorial(Producto producto, UpdateProductoRequest request) {
-        if (!request.codigo().trim().equals(producto.getCodigo())) {
-            throw new IllegalArgumentException(MENSAJE_SOLO_CAMPOS_PERMITIDOS);
-        }
         if (!request.idCategoria().equals(producto.getCategoria().getId())) {
             throw new IllegalArgumentException(MENSAJE_SOLO_CAMPOS_PERMITIDOS);
         }
@@ -181,13 +178,6 @@ public class ProductoServiceImpl implements ProductoService {
     }
 
     private void aplicarCambios(Producto producto, UpdateProductoRequest request) {
-        String codigo = request.codigo().trim();
-        if (!codigo.equals(producto.getCodigo())) {
-            if (productoRepository.existsByCodigoAndIdNot(codigo, producto.getId())) {
-                throw new DuplicateResourceException("Ya existe un producto con el código: " + codigo);
-            }
-            producto.setCodigo(codigo);
-        }
         if (!request.idCategoria().equals(producto.getCategoria().getId())) {
             producto.setCategoria(obtenerCategoriaActiva(request.idCategoria()));
         }
@@ -204,7 +194,4 @@ public class ProductoServiceImpl implements ProductoService {
         }
     }
 
-    private String generarSku(Long id) {
-        return PREFIJO_SKU + String.format("%06d", id);
-    }
 }

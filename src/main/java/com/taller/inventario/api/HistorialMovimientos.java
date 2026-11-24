@@ -4,6 +4,7 @@ import com.taller.inventario.movimiento.enums.TipoMovimiento;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +25,14 @@ public interface HistorialMovimientos {
 
     /** Movimientos de tipo CONSUMO en el rango, ordenados de más antiguo a más reciente. */
     List<MovimientoDetalle> consultarConsumosEntre(Instant desde, Instant hasta);
+
+    /** Fecha, tipo, unidades y costo unitario de un movimiento, para agregaciones por período. */
+    record FechaTipo(Instant fecha, TipoMovimiento tipo, Integer cantidad, Integer variacion,
+                     BigDecimal costoUnitario) {
+    }
+
+    /** Movimientos del rango con su tipo y unidades; {@code productoId} opcional. */
+    List<FechaTipo> consultarFechaTipoEntre(Instant desde, Instant hasta, Long productoId);
 
     /** Los cinco movimientos más recientes, usados por el dashboard. */
     List<MovimientoDetalle> consultarUltimos();

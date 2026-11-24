@@ -115,7 +115,7 @@ class GlobalExceptionHandlerTest {
         MethodArgumentTypeMismatchException ex = new MethodArgumentTypeMismatchException(
                 "abc", LocalDate.class, "desde", null, new IllegalArgumentException("formato inválido"));
 
-        ResponseEntity<ErrorResponse> response = handler.handle(ex, request("/api/reportes/movimientos"));
+        ResponseEntity<ErrorResponse> response = handler.handle(ex, request("/api/movimientos"));
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertEquals("VALIDATION_ERROR", response.getBody().error());
@@ -127,7 +127,7 @@ class GlobalExceptionHandlerTest {
     void missingServletRequestParameter_returnsValidationErrorWithContract() {
         ResponseEntity<ErrorResponse> response = handler.handle(
                 new MissingServletRequestParameterException("desde", "LocalDate"),
-                request("/api/reportes/movimientos"));
+                request("/api/movimientos"));
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertEquals("VALIDATION_ERROR", response.getBody().error());

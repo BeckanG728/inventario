@@ -48,7 +48,7 @@ responsabilidades operativas dentro de sus módulos.
 - Solo `JEFE_TALLER` registra entradas y ajustes de inventario (`RN201`, `RN209`).
 - `JEFE_TALLER` y `MECANICO` pueden registrar consumos (`RN204`).
 - `ADMIN` registra usuarios y consulta la auditoría, pero no accede a endpoints de negocio (`RN117`).
-- `GET /api/productos`, `GET /api/existencias` y `GET /api/stock/alertas` están disponibles para `JEFE_TALLER` y
+- `GET /api/productos`, `GET /api/monitoreo/existencias` y `GET /api/monitoreo/alertas` están disponibles para `JEFE_TALLER` y
   `MECANICO`; `ADMIN` no accede.
 - `GET /api/dashboard`, `GET /api/reportes/**` (incluidas las exportaciones) y `GET /api/estadisticas` están
   disponibles solo para `JEFE_TALLER`; `ADMIN` y `MECANICO` no acceden.
@@ -69,10 +69,11 @@ responsabilidades operativas dentro de sus módulos.
 | Catálogo | `POST /api/categorias`, `POST /api/proveedores` | ❌ | ✅ | ❌ | — |
 | Productos (escritura) | `POST /api/productos`, `PUT /api/productos/**`, `PATCH /api/productos/**` | ❌ | ✅ | ❌ | — |
 | Productos (consulta) | `GET /api/productos` | ❌ | ✅ | ✅ | — |
-| Existencias | `GET /api/existencias` | ❌ | ✅ | ✅ | — |
+| Existencias | `GET /api/monitoreo/existencias` | ❌ | ✅ | ✅ | — |
+| Combobox de filtros | `GET /api/categorias/activos`, `GET /api/proveedores/activos` | ❌ | ✅ | ✅ | — |
 | Entradas y ajustes | `POST /api/movimientos/entrada`, `POST /api/movimientos/ajuste` | ❌ | ✅ | ❌ | — |
 | Consumos | `POST /api/consumos` | ❌ | ✅ | ✅ | — |
-| Alertas | `GET /api/stock/alertas` | ❌ | ✅ | ✅ | — |
+| Alertas | `GET /api/monitoreo/alertas` | ❌ | ✅ | ✅ | — |
 | Dashboard | `GET /api/dashboard` | ❌ | ✅ | ❌ | — |
 | Reportes y exportaciones | `GET /api/reportes/**` | ❌ | ✅ | ❌ | — |
 | Estadísticas | `GET /api/estadisticas` | ❌ | ✅ | ❌ | — |
@@ -110,8 +111,8 @@ Esta sección conserva la trazabilidad con el código; no introduce nuevas polí
 
 | Mecanismo | Implementación | Propósito |
 |-----------|----------------|-----------|
-| Cadena de filtros y reglas de autorización | `SecurityConfig` | Define endpoints públicos, reglas por método y rol, sesiones sin estado, CSRF deshabilitado, CORS y manejadores de error 401/403. |
-| Autorización a nivel de método | `@PreAuthorize` en controladores de movimientos y consumos | Refuerza las reglas de `JEFE_TALLER` para entradas/ajustes y de `JEFE_TALLER`/`MECANICO` para consumos. |
+| Cadena de filtros y autenticación | `SecurityConfig` | Define endpoints públicos (`/api/auth/login`, actuator, `/error`), exige autenticación para el resto, y configura sesiones sin estado, CSRF, CORS y manejadores de error 401/403. No contiene reglas por rol. |
+| Autorización a nivel de endpoint | `@PreAuthorize` en todos los controladores | Es la única fuente de decisiones por rol: `ADMIN` en usuarios/auditoría/registro, `JEFE_TALLER` en catálogo/movimientos/reportes, y `JEFE_TALLER` + `MECANICO` en productos, existencias, alertas, combobox y consumos. |
 | Autenticación de usuarios | `DaoAuthenticationProvider`, `UsuarioDetailsService`, `BCryptPasswordEncoder` | Valida credenciales y aplica hash de contraseña. |
 | Emisión y validación de tokens | `JwtUtil`, `JwtAuthFilter`, `TokenAuthenticationEntryPoint`, `ErrorResponseWriter` | Genera el JWT, valida firma y expiración, carga el usuario desde la base de datos y escribe los errores de seguridad. |
 | Carga de autoridades | `Usuario.getAuthorities()` a partir del rol almacenado | Garantiza que el rol efectivo sea el de la base de datos. |

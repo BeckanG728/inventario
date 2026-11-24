@@ -5,6 +5,7 @@ import com.taller.catalogo.categoria.dto.response.CategoriaResponse;
 import com.taller.catalogo.categoria.service.CategoriaService;
 import com.taller.compartido.dto.PaginaResponse;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -37,5 +38,12 @@ public class CategoriaController {
             @RequestParam(required = false) String nombre,
             @RequestParam(required = false) Boolean activo) {
         return ResponseEntity.ok(PaginaResponse.from(categoriaService.listar(page, size, nombre, activo)));
+    }
+
+    /** Listado ligero para los combobox de filtros; accesible también al mecánico. */
+    @GetMapping("/activos")
+    @PreAuthorize("hasAnyRole('JEFE_TALLER', 'MECANICO')")
+    public ResponseEntity<List<CategoriaResponse>> listarActivos() {
+        return ResponseEntity.ok(categoriaService.listarActivos());
     }
 }
