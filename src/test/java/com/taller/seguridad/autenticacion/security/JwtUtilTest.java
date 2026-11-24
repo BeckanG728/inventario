@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class JwtUtilTest {
@@ -30,6 +31,14 @@ class JwtUtilTest {
         assertEquals("MECANICO", claims.get("role", String.class));
         assertEquals(7L, jwtUtil.extractUserId(claims));
         assertEquals(3600L, jwtUtil.getExpirationSeconds());
+    }
+
+    @Test
+    void generateToken_assignsDistinctSessionIds() {
+        Claims primera = jwtUtil.parse(jwtUtil.generateToken(7L, "MECANICO", "carlos", 0L));
+        Claims segunda = jwtUtil.parse(jwtUtil.generateToken(7L, "MECANICO", "carlos", 0L));
+
+        assertNotEquals(primera.getId(), segunda.getId());
     }
 
     @Test
