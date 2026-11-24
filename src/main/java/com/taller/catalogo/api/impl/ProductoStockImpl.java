@@ -57,7 +57,7 @@ public class ProductoStockImpl implements ProductoStock {
     @Override
     @Transactional
     public ProductoResponse fijarStockMinimo(Long productoId, Integer stockMinimo) {
-        Producto producto = productoRepository.findById(productoId)
+        Producto producto = productoRepository.findByIdForUpdate(productoId)
                 .orElseThrow(() -> new ProductoNotFoundException(productoId));
         producto.setStockMinimo(stockMinimo);
         return productoMapper.toResponse(producto);

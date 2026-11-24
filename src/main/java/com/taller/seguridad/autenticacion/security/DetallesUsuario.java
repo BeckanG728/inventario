@@ -18,7 +18,8 @@ public record DetallesUsuario(
         String username,
         String passwordHash,
         boolean activo,
-        String role
+        String role,
+        long versionSesion
 ) implements UserDetails {
 
     @Override

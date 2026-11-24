@@ -46,8 +46,9 @@ public class ProductoServiceImpl implements ProductoService {
         Categoria categoria = obtenerCategoriaActiva(request.idCategoria());
         Proveedor proveedor = obtenerProveedorActivo(request.idProveedor());
 
+        productoRepository.bloquearAlta();
         String codigo = CodigoGenerator.generar(
-                CodigoGenerator.correlativoDe(productoRepository.findMaxCodigo()) + 1);
+                Math.incrementExact(CodigoGenerator.correlativoDe(productoRepository.findMaxCodigo())));
 
         Producto producto = new Producto(
                 codigo,
@@ -63,7 +64,7 @@ public class ProductoServiceImpl implements ProductoService {
 
         String prefijo = SkuGenerator.prefijo(request.nombre().trim(), categoria.getId());
         String maxSku = productoRepository.findMaxSkuByPrefijo(prefijo);
-        int correlativo = SkuGenerator.correlativoDe(maxSku) + 1;
+        int correlativo = Math.incrementExact(SkuGenerator.correlativoDe(maxSku));
         producto.setSku(SkuGenerator.generar(request.nombre().trim(), categoria.getId(), correlativo));
 
         Producto guardado = productoRepository.save(producto);
@@ -138,7 +139,7 @@ public class ProductoServiceImpl implements ProductoService {
     }
 
     private Producto obtenerProducto(Long id) {
-        return productoRepository.findById(id)
+        return productoRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ProductoNotFoundException(id));
     }
 

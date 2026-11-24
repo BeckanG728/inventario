@@ -44,15 +44,28 @@ public interface ProductoRepository extends JpaRepository<Producto, Long>,
 
     boolean existsByCodigoAndIdNot(String codigo, Long id);
 
-    /** SKU con correlativo más alto de un prefijo; cadena vacía si no hay ninguno. */
-    @Query("select coalesce(max(p.sku), '') from Producto p where p.sku like concat(:prefijo, '-%')")
+    /** SKU con correlativo más alto de un prefijo; null si no hay ninguno. */
+    @Query(value = """
+            select sku from producto where sku like concat(:prefijo, '-%')
+            and sku ~ '-[0-9]+$' order by length(sku) desc, sku desc limit 1
+            """, nativeQuery = true)
     String findMaxSkuByPrefijo(@Param("prefijo") String prefijo);
 
-    /** Código PRD con correlativo más alto; cadena vacía si no hay ninguno. */
-    @Query("select coalesce(max(p.codigo), '') from Producto p where p.codigo like 'PRD-%'")
+    /** Código PRD con correlativo más alto; null si no hay ninguno. */
+    @Query(value = """
+            select codigo from producto where codigo ~ '^PRD-[0-9]+$'
+            order by length(codigo) desc, codigo desc limit 1
+            """, nativeQuery = true)
     String findMaxCodigo();
 
     Optional<Producto> findByIdAndActivoTrue(Long id);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select p from Producto p where p.id = :id")
+    Optional<Producto> findByIdForUpdate(@Param("id") Long id);
+
+    @Query(value = "select nombre from bloqueo_operacion where nombre = 'alta_producto' for update", nativeQuery = true)
+    String bloquearAlta();
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select p from Producto p where p.id = :id and p.activo = true")

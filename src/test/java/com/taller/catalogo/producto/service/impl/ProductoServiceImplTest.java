@@ -70,7 +70,7 @@ class ProductoServiceImplTest {
     @Test
     void actualizar_noModificaElCodigoGenerado() {
         Producto producto = new Producto("PRD-0001", "Filtro", "UNIDAD", 10, categoria(), proveedor());
-        when(productoRepository.findById(12L)).thenReturn(Optional.of(producto));
+        when(productoRepository.findByIdForUpdate(12L)).thenReturn(Optional.of(producto));
         when(historialMovimientos.existePorProducto(12L)).thenReturn(false);
         when(categoriaRepository.findById(3L)).thenReturn(Optional.of(categoria()));
         when(proveedorRepository.findById(7L)).thenReturn(Optional.of(proveedor()));

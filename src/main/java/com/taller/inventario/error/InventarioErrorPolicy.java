@@ -14,11 +14,13 @@ public class InventarioErrorPolicy implements ErrorPolicy {
 
     @Override
     public boolean supports(Throwable error) {
-        return error instanceof StockInsuficienteException;
+        return error instanceof StockInsuficienteException || error instanceof ConflictoIdempotenciaException;
     }
 
     @Override
     public ErrorDefinition resolve(Throwable error) {
-        return ErrorDefinition.of(ErrorCode.STOCK_INSUFICIENTE, error.getMessage());
+        ErrorCode code = error instanceof ConflictoIdempotenciaException
+                ? ErrorCode.DUPLICATE_RESOURCE : ErrorCode.STOCK_INSUFICIENTE;
+        return ErrorDefinition.of(code, error.getMessage());
     }
 }

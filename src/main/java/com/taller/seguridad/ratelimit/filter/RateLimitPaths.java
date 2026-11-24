@@ -21,18 +21,6 @@ final class RateLimitPaths {
     }
 
     static String ip(HttpServletRequest request) {
-        String candidato = primeraNoVacia(request.getHeader("X-Forwarded-For"));
-        if (candidato != null) {
-            return candidato;
-        }
-        candidato = primeraNoVacia(request.getHeader("X-Real-IP"));
-        return candidato != null ? candidato : request.getRemoteAddr();
-    }
-
-    private static String primeraNoVacia(String cabecera) {
-        if (cabecera == null || cabecera.isBlank()) {
-            return null;
-        }
-        return cabecera.split(",", 2)[0].trim();
+        return request.getRemoteAddr();
     }
 }

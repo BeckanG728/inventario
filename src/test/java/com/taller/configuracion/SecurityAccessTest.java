@@ -11,6 +11,7 @@ import com.taller.monitoreo.service.ExistenciaService;
 import com.taller.reportes.consulta.controller.ReporteController;
 import com.taller.reportes.consulta.service.InventarioValorService;
 import com.taller.reportes.exportacion.service.ReporteExportService;
+import com.taller.inventario.api.impl.OperacionIdempotente;
 import com.taller.inventario.movimiento.controller.MovimientoController;
 import com.taller.inventario.movimiento.service.MovimientoService;
 import com.taller.inventario.movimiento.service.ReporteMovimientosService;
@@ -96,6 +97,9 @@ class SecurityAccessTest {
 
     @MockitoBean
     private MovimientoService movimientoService;
+
+    @MockitoBean
+    private OperacionIdempotente operacionIdempotente;
 
     @MockitoBean
     private ReporteMovimientosService reporteMovimientosService;

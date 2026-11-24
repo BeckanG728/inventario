@@ -70,7 +70,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         DetallesUsuario detalles = (DetallesUsuario) authentication.getPrincipal();
-        String token = jwtUtil.generateToken(detalles.id(), detalles.role(), detalles.username());
+        String token = jwtUtil.generateToken(detalles.id(), detalles.role(), detalles.username(), detalles.versionSesion());
 
         return userMapper.toLoginResponse(detalles, token, jwtUtil.getExpirationSeconds());
     }

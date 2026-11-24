@@ -11,18 +11,21 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
 public class JwtUtil {
     private final SeguridadProperties appConfig;
 
-    public String generateToken(Long userId, String role, String username) {
+    public String generateToken(Long userId, String role, String username, long versionSesion) {
         Instant now = Instant.now();
         return Jwts.builder()
                 .subject(String.valueOf(userId))
+                .id(UUID.randomUUID().toString())
                 .claim("username", username)
                 .claim("role", role)
+                .claim("sv", versionSesion)
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plusSeconds(appConfig.getJwtExpiration())))
                 .signWith(signingKey(), Jwts.SIG.HS256)

@@ -96,7 +96,7 @@ public class PreparacionCatalogoImpl implements PreparacionCatalogo {
     @Transactional
     public void aplicarEstado(List<EstadoProductoDemo> estados) {
         for (EstadoProductoDemo estado : estados) {
-            Producto producto = productoRepository.findById(estado.id())
+            Producto producto = productoRepository.findByIdForUpdate(estado.id())
                     .orElseThrow(() -> new IllegalStateException("Producto demo no encontrado"));
             producto.setStockActual(estado.stockActual());
             producto.setStockMinimo(estado.stockMinimo());
