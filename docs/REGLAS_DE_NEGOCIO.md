@@ -70,8 +70,8 @@ Las reglas RN401 a RN403 y RN406 no existen en la numeración original.
 ### RN118 — Restricciones de edición con historial
 
 - **Enunciado:** Cuando un producto ya tiene movimientos registrados, solo se pueden modificar su nombre, su
-  descripción y su unidad de medida. El código, la categoría, el proveedor, el stock mínimo y el estado activo deben
-  permanecer sin cambios.
+  descripción, su presentación comercial y su factor. **La unidad base es inmutable** (RN502). El código, la
+  categoría, el proveedor, el stock mínimo y el estado activo deben permanecer sin cambios.
 - **Condiciones:** la edición completa del producto debe enviar esos campos con sus valores actuales. La
   actualización específica del stock mínimo es una excepción: se realiza directamente y no comprueba el historial de
   movimientos.
@@ -173,7 +173,7 @@ Las reglas RN401 a RN403 y RN406 no existen en la numeración original.
 
 - **Enunciado:** Hay bajo stock cuando el stock actual es menor o igual al stock mínimo. Solo se consideran los
   productos activos.
-- **Condiciones:** el stock actual y el stock mínimo se comparan en la misma unidad de medida del producto.
+- **Condiciones:** el stock actual y el stock mínimo se comparan en la unidad base del producto.
 - **Consecuencia:** el producto se incluye en las alertas y en el listado operativo de existencias cuando se filtra
   por estado `BAJO` o `SIN_STOCK`; si el stock supera el mínimo, deja de considerarse en riesgo.
 - **Trazabilidad:** la exposición del indicador `stockCritico` en las respuestas se especifica en
@@ -219,7 +219,28 @@ Las reglas RN401 a RN403 y RN406 no existen en la numeración original.
 - **Trazabilidad:** el mecanismo de transacción de solo lectura se documenta en
   [CONFIGURACION_TECNICA.md](CONFIGURACION_TECNICA.md).
 
-## 6. Documentos relacionados
+## 6. Unidades base y presentaciones (V9/V10)
+
+- **RN501 — Catálogo de unidades.** Las unidades son datos de negocio sembrados en V9 (12 códigos: `UND`, `CAJA`,
+  `PAR`, `JUEGO`, `KIT`, `LITRO`, `GALON`, `KG`, `METRO`, `CM`, `ROLLO`, `LATA`). `permite_fragmentacion` solo es
+  `true` en `CAJA`, `METRO` y `ROLLO`. `KG` está disponible pero no se usa en datos demo.
+- **RN502 — Unidad base.** Todo producto tiene una unidad base, inmutable desde su primer movimiento. Stock actual y
+  mínimo se expresan en esa unidad. Quienes controlan el stock por botella, lata o envase usan `UND`, no el contenido
+  físico. La longitud se controla en `CM`.
+- **RN503 — Unidades por categoría.** Un producto solo puede usar unidades asociadas a su categoría
+  (`categoria_unidad`). El alta de categoría exige al menos una unidad. No se puede desactivar una unidad usada por un
+  producto.
+- **RN504 — Presentación y factor.** `unidad_presentacion_id` y `factor_presentacion` son el valor por defecto del
+  producto. Cada movimiento puede registrar su propia presentación y factor; cambiarlos no altera el stock ni el
+  histórico, porque cada movimiento conserva su snapshot.
+- **RN505 — Entradas.** La cantidad introducida se convierte a unidades base (`cantidad × factor`). El costo unitario
+  se divide por el factor para valorar cada unidad base. Solo se admite decimal en longitud (p. ej. 1.5 m = 150 cm).
+- **RN506 — Consumos y ajustes.** Los consumos descuentan unidades base enteras. Los ajustes fijan el stock en unidad
+  base y no tienen `cantidad_base` (solo `variacion`).
+- **RN507 — Sin movimiento de fragmentación.** Abrir una caja o un rollo no genera un movimiento adicional: la
+  conversión ya ocurrió al registrar la entrada. Crear un ajuste para "registrar lo que queda" sería doble conteo.
+
+## 7. Documentos relacionados
 
 - [VALIDACIONES.md](VALIDACIONES.md): restricciones de entrada, formatos, longitudes, rangos y unicidad.
 - [POLITICAS_DE_SEGURIDAD.md](POLITICAS_DE_SEGURIDAD.md): autenticación, autorización, roles, permisos y tokens.

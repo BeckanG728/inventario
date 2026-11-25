@@ -10,7 +10,10 @@ public record ExistenciaConsultaResponse(
         String codigo,
         String nombre,
         String descripcion,
-        String unidadMedida,
+        String unidadBaseCodigo,
+        String unidadBaseNombre,
+        String unidadPresentacionCodigo,
+        Integer factorPresentacion,
         Integer stockActual,
         Integer stockMinimo,
         boolean stockCritico,
@@ -28,7 +31,9 @@ public record ExistenciaConsultaResponse(
                                                    Integer cantidadSugerida) {
         return new ExistenciaConsultaResponse(
                 base.id(), base.codigo(), base.nombre(), base.descripcion(),
-                base.unidadMedida(), base.stockActual(), base.stockMinimo(), base.stockCritico(),
+                base.unidadBaseCodigo(), base.unidadBaseNombre(), base.unidadPresentacionCodigo(),
+                base.factorPresentacion(),
+                base.stockActual(), base.stockMinimo(), base.stockCritico(),
                 base.costoUltimaCompra(), base.activo(), base.categoriaId(), base.categoriaNombre(),
                 base.proveedorId(), base.proveedorRazonSocial(), estadoStock, cantidadSugerida);
     }

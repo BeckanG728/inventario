@@ -107,6 +107,23 @@ public class DemoDataService {
         for (int i = 0; i < categoriaIds.size(); i++) {
             idPorCategoriaBase.put(DemoData.CATEGORIAS_BASE.get(i), categoriaIds.get(i));
         }
+
+        // Asocia las unidades ya creadas por V9 a las categorías que crea el demo.
+        java.util.Set<PreparacionCatalogo.CategoriaUnidadDemo> asociaciones = new java.util.LinkedHashSet<>();
+        for (String tipo : DemoData.TIPOS_PRODUCTO) {
+            Long categoriaId = idPorCategoriaBase.get(DemoData.CATEGORIA_POR_TIPO.get(tipo));
+            if (categoriaId == null) {
+                continue;
+            }
+            for (String unidad : DemoData.UNIDADES_POR_TIPO.getOrDefault(tipo, List.of())) {
+                String codigo = DemoData.CODIGO_UNIDAD_BASE.get(unidad);
+                if (codigo != null) {
+                    asociaciones.add(new PreparacionCatalogo.CategoriaUnidadDemo(categoriaId, codigo));
+                }
+            }
+        }
+        preparacionCatalogo.asociarUnidades(new ArrayList<>(asociaciones));
+
         Map<String, List<String>> tiposPorCategoria = new HashMap<>();
         for (String tipo : DemoData.TIPOS_PRODUCTO) {
             String nombreCategoria = DemoData.CATEGORIA_POR_TIPO.get(tipo);
@@ -125,7 +142,7 @@ public class DemoDataService {
             if (unidades == null || unidades.isEmpty() || rangoCosto == null) {
                 throw new IllegalStateException("FATAL: catálogo demo incompleto para el tipo " + tipo);
             }
-            String unidadMedida = faker.options().option(unidades.toArray(String[]::new));
+            String unidadTextoDemo = faker.options().option(unidades.toArray(String[]::new));
             Integer stockMinimo = faker.number().numberBetween(5, 50);
             String descripcion = truncar(faker.lorem().sentence(10), 500);
             BigDecimal costo = BigDecimal.valueOf(faker.number().numberBetween(
@@ -136,9 +153,19 @@ public class DemoDataService {
                         "FATAL: la categoría del tipo " + tipo + " no está configurada en el seed");
             }
             Long proveedorId = proveedorIds.get(faker.number().numberBetween(0, proveedorIds.size() - 1));
+            String codigoBase = DemoData.CODIGO_UNIDAD_BASE.get(unidadTextoDemo);
+            if (codigoBase == null) {
+                throw new IllegalStateException("FATAL: unidad demo sin código de negocio: " + unidadTextoDemo);
+            }
+            String presentacion = DemoData.PRESENTACION_POR_TIPO.get(tipo);
+            Integer factor = DemoData.FACTOR_PRESENTACION_POR_TIPO.get(tipo);
+            if (presentacion != null && factor == null) {
+                factor = 20;
+            }
             productosDemo.add(new ProductoDemo(
-                    generarNombreProducto(faker, tipo), descripcion, unidadMedida,
-                    stockMinimo, costo, categoriaId, proveedorId));
+                    generarNombreProducto(faker, tipo), descripcion,
+                    stockMinimo, costo, categoriaId, proveedorId,
+                    codigoBase, presentacion, factor));
         }
         List<ProductoCreado> productos = preparacionCatalogo.crearProductos(productosDemo);
 

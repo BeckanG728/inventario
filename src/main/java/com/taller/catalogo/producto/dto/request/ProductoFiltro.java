@@ -6,7 +6,7 @@ public record ProductoFiltro(
         Long categoriaId,
         String codigo,
         Long proveedorId,
-        String unidadMedida,
+        Long unidadBaseId,
         Boolean activo,
         Boolean stockCritico
 ) {

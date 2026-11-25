@@ -101,6 +101,35 @@ public final class DemoData {
             Map.entry("Plumillas limpiaparabrisas", List.of("UNIDAD", "PAR")),
             Map.entry("Tapetes", List.of("JUEGO")));
 
+    /** Traducción de las unidades históricas de texto a los códigos de negocio sembrados en V9. */
+    public static final Map<String, String> CODIGO_UNIDAD_BASE = Map.ofEntries(
+            Map.entry("UNIDAD", "UND"),
+            Map.entry("CAJA", "UND"),
+            Map.entry("KILOGRAMO", "UND"),
+            Map.entry("METRO", "CM"),
+            Map.entry("ROLLO", "CM"),
+            Map.entry("PAR", "PAR"),
+            Map.entry("JUEGO", "JUEGO"),
+            Map.entry("KIT", "KIT"),
+            Map.entry("LITRO", "LITRO"),
+            Map.entry("GALON", "GALON"),
+            Map.entry("LATA", "LATA"));
+
+    /** Presentación y factor por tipo. KG no se usa en datos demo (unidad de negocio sin uso). */
+    public static final Map<String, String> PRESENTACION_POR_TIPO = Map.ofEntries(
+            Map.entry("Bujía", "CAJA"),
+            Map.entry("Fusible", "CAJA"),
+            Map.entry("Abrazadera", "CAJA"),
+            Map.entry("Manguera de refrigeración", "METRO"),
+            Map.entry("Cinta aislante", "ROLLO"));
+
+    public static final Map<String, Integer> FACTOR_PRESENTACION_POR_TIPO = Map.ofEntries(
+            Map.entry("Bujía", 20),
+            Map.entry("Fusible", 50),
+            Map.entry("Abrazadera", 100),
+            Map.entry("Manguera de refrigeración", 100),
+            Map.entry("Cinta aislante", 3000));
+
     /** Relación única tipo → categoría. Todas las categorías tienen al menos dos tipos. */
     public static final Map<String, String> CATEGORIA_POR_TIPO = Map.ofEntries(
             Map.entry("Aceite de motor", "Lubricantes"),
@@ -237,7 +266,9 @@ public final class DemoData {
             Map.entry("Neumático", new RangoCantidad(2, 8)),
             Map.entry("Radiador", new RangoCantidad(1, 3)),
             Map.entry("Llave de tuercas", new RangoCantidad(1, 2)),
-            Map.entry("Destornillador", new RangoCantidad(1, 4)));
+            Map.entry("Destornillador", new RangoCantidad(1, 4)),
+            Map.entry("Manguera de refrigeración", new RangoCantidad(100, 500)),
+            Map.entry("Cinta aislante", new RangoCantidad(1000, 5000)));
 
     /** Peso relativo de reposición: los artículos de alta rotación aparecen más a menudo. */
     public static final Map<String, Integer> PESO_ROTACION_POR_TIPO = Map.ofEntries(
@@ -315,6 +346,8 @@ public final class DemoData {
                  "Filtro de cabina", "Batería", "Neumático", "Amortiguador", "Radiador" -> 1;
             case "Bujía", "Fusible", "Abrazadera", "Válvula de neumático" ->
                     faker.number().numberBetween(1, 5);
+            case "Manguera de refrigeración", "Cinta aislante" ->
+                    faker.number().numberBetween(30, 300);
             default -> faker.number().numberBetween(1, 3);
         };
     }

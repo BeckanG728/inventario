@@ -117,7 +117,27 @@ El contrato detallado se encuentra en [CATALOGO_ENDPOINTS.md](CATALOGO_ENDPOINTS
 Las políticas asociadas se documentan en [POLITICAS_DE_SEGURIDAD.md](POLITICAS_DE_SEGURIDAD.md) y las restricciones de
 datos en [VALIDACIONES.md](VALIDACIONES.md).
 
-## 10. Verificación
+## 10. Unidades base, presentaciones y menudeo (RF-10)
+
+**Origen:** RN501 a RN507, RN103, RN118.
+
+- El catálogo de unidades (`UND`, `CAJA`, `PAR`, `JUEGO`, `KIT`, `LITRO`, `GALON`, `KG`, `METRO`, `CM`, `ROLLO`, `LATA`)
+  es dato de negocio sembrado en la migración V9; no depende del perfil ni del seeder demo.
+- Cada producto tiene una unidad base estable e inmutable desde su primer movimiento. Las existencias y los movimientos
+  se expresan en esa unidad. Los envases de consumo único (botella de 1 L, envase de 250 g, lata) se controlan como
+  `UND`; la longitud se controla en `CM`.
+- Cada categoría tiene un conjunto de unidades válidas. El alta de categoría exige al menos una; el frontend solo
+  ofrece esas unidades al crear o editar un producto.
+- Un producto puede tener una presentación comercial (`CAJA`, `METRO`, `ROLLO`) con un factor entero. Una entrada de
+  3 cajas de 20 unidades registra 60 unidades base y divide el costo por el factor.
+- Solo se admite cantidad decimal en longitud (1,5 m = 150 cm). No se permite "media caja".
+- La apertura de un envase no genera un movimiento adicional: la conversión ya ocurrió al registrar la operación.
+  Cada movimiento conserva como snapshot la unidad introducida, el factor aplicado y la cantidad en unidad base.
+- El endpoint `GET /api/unidades` expone el catálogo; `GET /api/categorias/{id}/unidades` y
+  `PUT /api/categorias/{id}/unidades` gestionan la asociación por categoría.
+
+## 11. Verificación
 
 Los requisitos se contrastaron estáticamente con los servicios de alertas, reportes, dashboard, estadísticas,
-exportaciones y los controladores correspondientes. No se ejecutaron pruebas de runtime.
+exportaciones, el catálogo de unidades, la conversión de presentaciones y los controladores correspondientes.
+No se ejecutaron pruebas de runtime.

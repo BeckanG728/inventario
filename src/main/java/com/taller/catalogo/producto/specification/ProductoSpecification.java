@@ -31,9 +31,8 @@ public final class ProductoSpecification {
         return (root, query, cb) -> cb.equal(root.get("proveedor").get("id"), proveedorId);
     }
 
-    public static Specification<Producto> unidadMedidaIgual(String unidadMedida) {
-        String valor = unidadMedida.toLowerCase(Locale.ROOT);
-        return (root, query, cb) -> cb.equal(cb.lower(root.get("unidadMedida")), valor);
+    public static Specification<Producto> unidadBaseIdIgual(Long unidadBaseId) {
+        return (root, query, cb) -> cb.equal(root.get("unidadBase").get("id"), unidadBaseId);
     }
 
     public static Specification<Producto> activoIgual(boolean activo) {

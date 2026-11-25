@@ -4,6 +4,8 @@ import com.taller.catalogo.categoria.entity.Categoria;
 import com.taller.catalogo.proveedor.entity.Proveedor;
 import com.taller.catalogo.categoria.repository.CategoriaRepository;
 import com.taller.catalogo.proveedor.repository.ProveedorRepository;
+import com.taller.catalogo.unidad.entity.Unidad;
+import com.taller.catalogo.unidad.repository.UnidadRepository;
 import com.taller.inventario.api.HistorialMovimientos;
 import com.taller.catalogo.producto.dto.request.CreateProductoRequest;
 import com.taller.catalogo.producto.dto.request.ProductoFiltro;
@@ -38,6 +40,7 @@ public class ProductoServiceImpl implements ProductoService {
     private final ProveedorRepository proveedorRepository;
     private final HistorialMovimientos historialMovimientos;
     private final ProductoMapper productoMapper;
+    private final UnidadRepository unidadRepository;
 
     @Override
     @Transactional
@@ -51,10 +54,16 @@ public class ProductoServiceImpl implements ProductoService {
         String codigo = CodigoGenerator.generar(
                 prefijo, Math.incrementExact(CodigoGenerator.correlativoDe(maxCodigo)));
 
+        Unidad unidadBase = resolverUnidadBase(request.unidadBaseId(), categoria);
+        Unidad presentacion = resolverPresentacion(request.unidadPresentacionId(), categoria);
+        if (presentacion != null && request.factorPresentacion() == null) {
+            throw new IllegalArgumentException("El factor de presentación es obligatorio cuando se indica una presentación");
+        }
+
         Producto producto = new Producto(
                 codigo,
                 request.nombre().trim(),
-                request.unidadMedida().trim(),
+                unidadBase,
                 request.stockMinimo(),
                 categoria,
                 proveedor);
@@ -62,6 +71,8 @@ public class ProductoServiceImpl implements ProductoService {
         producto.setDescripcion(request.descripcion());
         producto.setStockActual(0);
         producto.setActivo(true);
+        producto.setUnidadPresentacion(presentacion);
+        producto.setFactorPresentacion(request.factorPresentacion());
 
         Producto guardado = productoRepository.save(producto);
         return productoMapper.toResponse(guardado);
@@ -91,9 +102,8 @@ public class ProductoServiceImpl implements ProductoService {
         if (filtro.proveedorId() != null) {
             filtros = filtros.and(ProductoSpecification.proveedorId(filtro.proveedorId()));
         }
-        String unidadMedida = textoONull(filtro.unidadMedida());
-        if (unidadMedida != null) {
-            filtros = filtros.and(ProductoSpecification.unidadMedidaIgual(unidadMedida));
+        if (filtro.unidadBaseId() != null) {
+            filtros = filtros.and(ProductoSpecification.unidadBaseIdIgual(filtro.unidadBaseId()));
         }
         if (filtro.activo() != null) {
             filtros = filtros.and(ProductoSpecification.activoIgual(filtro.activo()));
@@ -157,9 +167,46 @@ public class ProductoServiceImpl implements ProductoService {
         return proveedor;
     }
 
+    private Unidad resolverUnidadBase(Long id, Categoria categoria) {
+        if (id == null) {
+            throw new IllegalArgumentException("La unidad base es obligatoria");
+        }
+        Unidad unidad = resolverUnidad(id);
+        validarUnidadDeCategoria(unidad, categoria);
+        return unidad;
+    }
+
+    private Unidad resolverPresentacion(Long id, Categoria categoria) {
+        if (id == null) {
+            return null;
+        }
+        Unidad unidad = resolverUnidad(id);
+        validarUnidadDeCategoria(unidad, categoria);
+        return unidad;
+    }
+
+    private Unidad resolverUnidad(Long id) {
+        Unidad unidad = unidadRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Unidad no encontrada: " + id));
+        if (!unidad.isActivo()) {
+            throw new IllegalArgumentException("Unidad inactiva: " + unidad.getCodigo());
+        }
+        return unidad;
+    }
+
+    private void validarUnidadDeCategoria(Unidad unidad, Categoria categoria) {
+        if (!categoria.admiteUnidad(unidad)) {
+            throw new IllegalArgumentException("La unidad " + unidad.getCodigo()
+                    + " no es válida para la categoría " + categoria.getNombre());
+        }
+    }
+
     private void validarEdicionConHistorial(Producto producto, UpdateProductoRequest request) {
         if (!request.idCategoria().equals(producto.getCategoria().getId())) {
             throw new IllegalArgumentException(MENSAJE_SOLO_CAMPOS_PERMITIDOS);
+        }
+        if (!unidadBaseSolicitadaEsActual(producto, request)) {
+            throw new IllegalArgumentException("No se puede cambiar la unidad base: el producto tiene movimientos registrados");
         }
         if (!request.idProveedor().equals(producto.getProveedor().getId())) {
             throw new IllegalArgumentException(MENSAJE_SOLO_CAMPOS_PERMITIDOS);
@@ -174,17 +221,36 @@ public class ProductoServiceImpl implements ProductoService {
         }
     }
 
+    private boolean unidadBaseSolicitadaEsActual(Producto producto, UpdateProductoRequest request) {
+        Unidad actual = producto.getUnidadBase();
+        if (actual == null) {
+            return request.unidadBaseId() == null;
+        }
+        return request.unidadBaseId() != null && request.unidadBaseId().equals(actual.getId());
+    }
+
     private void aplicarCambios(Producto producto, UpdateProductoRequest request) {
-        if (!request.idCategoria().equals(producto.getCategoria().getId())) {
-            producto.setCategoria(obtenerCategoriaActiva(request.idCategoria()));
+        Categoria categoria = producto.getCategoria();
+        if (!request.idCategoria().equals(categoria.getId())) {
+            categoria = obtenerCategoriaActiva(request.idCategoria());
+            producto.setCategoria(categoria);
         }
         if (!request.idProveedor().equals(producto.getProveedor().getId())) {
             producto.setProveedor(obtenerProveedorActivo(request.idProveedor()));
         }
 
+        Unidad unidadBase = resolverUnidadBase(request.unidadBaseId(), categoria);
+        producto.setUnidadBase(unidadBase);
+
+        Unidad presentacion = resolverPresentacion(request.unidadPresentacionId(), categoria);
+        if (presentacion != null && request.factorPresentacion() == null) {
+            throw new IllegalArgumentException("El factor de presentación es obligatorio cuando se indica una presentación");
+        }
+        producto.setUnidadPresentacion(presentacion);
+        producto.setFactorPresentacion(request.factorPresentacion());
+
         producto.setNombre(request.nombre().trim());
         producto.setDescripcion(request.descripcion());
-        producto.setUnidadMedida(request.unidadMedida().trim());
         producto.setStockMinimo(request.stockMinimo());
         if (request.activo() != null) {
             producto.setActivo(request.activo());

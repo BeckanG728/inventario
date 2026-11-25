@@ -9,8 +9,11 @@ import com.taller.catalogo.producto.dto.request.UpdateProductoRequest;
 import com.taller.catalogo.producto.entity.Producto;
 import com.taller.catalogo.producto.mapper.ProductoMapper;
 import com.taller.catalogo.producto.repository.ProductoRepository;
+import com.taller.catalogo.unidad.entity.Unidad;
+import com.taller.catalogo.unidad.repository.UnidadRepository;
 import com.taller.inventario.api.HistorialMovimientos;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -40,12 +43,20 @@ class ProductoServiceImplTest {
     private HistorialMovimientos historialMovimientos;
     @Mock
     private ProductoMapper productoMapper;
+    @Mock
+    private UnidadRepository unidadRepository;
 
     @InjectMocks
     private ProductoServiceImpl service;
 
+    private Unidad unidad() {
+        return new Unidad("UND", "Unidad", false);
+    }
+
     private Categoria categoria() {
-        return new Categoria("Filtros", null);
+        Categoria categoria = new Categoria("Filtros", null);
+        categoria.reemplazarUnidades(Set.of(unidad()));
+        return categoria;
     }
 
     private Proveedor proveedor() {
@@ -56,28 +67,33 @@ class ProductoServiceImplTest {
     void crear_generaCodigoConElCorrelativoSiguiente() {
         when(categoriaRepository.findById(3L)).thenReturn(Optional.of(categoria()));
         when(proveedorRepository.findById(7L)).thenReturn(Optional.of(proveedor()));
+        when(unidadRepository.findById(1L)).thenReturn(Optional.of(unidad()));
         when(productoRepository.findMaxCodigoByPrefijo("FIL")).thenReturn("FIL-0012");
         when(productoRepository.save(any(Producto.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        CreateProductoRequest request =
-                new CreateProductoRequest("Filtro de aceite", null, "UNIDAD", 10, 3L, 7L);
+        CreateProductoRequest request = new CreateProductoRequest(
+                "Filtro de aceite", null, 1L, null, null, 10, 3L, 7L);
         service.crear(request);
 
         ArgumentCaptor<Producto> captor = ArgumentCaptor.forClass(Producto.class);
         verify(productoRepository).save(captor.capture());
         assertEquals("FIL-0013", captor.getValue().getCodigo());
+        assertEquals("UND", captor.getValue().getUnidadBase().getCodigo());
     }
 
     @Test
     void actualizar_noModificaElCodigoGenerado() {
-        Producto producto = new Producto("FIL-0001", "Filtro", "UNIDAD", 10, categoria(), proveedor());
+        Unidad unidad = unidad();
+        Categoria categoria = categoria();
+        Producto producto = new Producto("FIL-0001", "Filtro", unidad, 10, categoria, proveedor());
         when(productoRepository.findByIdForUpdate(12L)).thenReturn(Optional.of(producto));
         when(historialMovimientos.existePorProducto(12L)).thenReturn(false);
-        when(categoriaRepository.findById(3L)).thenReturn(Optional.of(categoria()));
+        when(categoriaRepository.findById(3L)).thenReturn(Optional.of(categoria));
         when(proveedorRepository.findById(7L)).thenReturn(Optional.of(proveedor()));
+        when(unidadRepository.findById(1L)).thenReturn(Optional.of(unidad));
 
-        UpdateProductoRequest request =
-                new UpdateProductoRequest("Filtro nuevo", null, "UNIDAD", 10, null, 3L, 7L);
+        UpdateProductoRequest request = new UpdateProductoRequest(
+                "Filtro nuevo", null, 1L, null, null, 10, null, 3L, 7L);
         service.actualizar(12L, request);
 
         assertEquals("FIL-0001", producto.getCodigo());

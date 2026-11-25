@@ -50,7 +50,7 @@ restricción única de la base de datos.
 | VAL-PROD-01 | `codigo` | No se acepta en el body: el backend lo genera con `AAA-nnnn` (AAA = siglas de la categoría) y garantiza su unicidad | RN101 | — |
 | VAL-PROD-03 | `nombre` | Obligatorio; máximo 150 caracteres | Contrato de API | `400 VALIDATION_ERROR` |
 | VAL-PROD-04 | `descripcion` | Opcional; máximo 500 caracteres | Contrato de API | `400 VALIDATION_ERROR` |
-| VAL-PROD-05 | `unidadMedida` | Obligatoria; máximo 30 caracteres | RN103 | `400 VALIDATION_ERROR` |
+| VAL-PROD-05 | `unidadBaseId` | Obligatorio; `> 0`, unidad activa y válida para la categoría | RN103 | `400 VALIDATION_ERROR` |
 | VAL-PROD-06 | `stockMinimo` | Obligatorio; entero mayor o igual que 0 | RN104 | `400 VALIDATION_ERROR` |
 | VAL-PROD-07 | `id_categoria` | Obligatorio; entero mayor que 0; la categoría debe existir y estar activa al crear el producto o al cambiarla | RN102 | `400 VALIDATION_ERROR` |
 | VAL-PROD-08 | `id_proveedor` | Obligatorio; entero mayor que 0; el proveedor debe existir y estar activo al crear el producto o al cambiarlo | RN105 | `400 VALIDATION_ERROR` |
@@ -58,7 +58,7 @@ restricción única de la base de datos.
 | VAL-PROD-10 | `nuevoStockMinimo` | Obligatorio; entero mayor o igual que 0 en la actualización específica del stock mínimo | RN104 | `400 VALIDATION_ERROR` |
 | VAL-PROD-11 | `stockActual` | No forma parte de los datos de alta o edición; el stock inicial es 0 y solo cambia por movimientos | RN106 | No se acepta como dato editable |
 | VAL-PROD-12 | Alias de identificadores | `idCategoria`, `categoriaId`, `idProveedor` y `proveedorId` se aceptan como alias de `id_categoria` e `id_proveedor` | Contrato de API | — |
-| VAL-PROD-13 | Edición con historial | Con movimientos registrados, solo se aceptan cambios en `nombre`, `descripcion` y `unidadMedida`; `stockMinimo`, `activo`, categoría y proveedor deben enviarse sin cambios | RN118 | `400 VALIDATION_ERROR` |
+| VAL-PROD-13 | Edición con historial | Con movimientos registrados, la unidad base es inmutable; solo se aceptan cambios en `nombre`, `descripcion`, presentación y factor; `stockMinimo`, `activo`, categoría y proveedor deben enviarse sin cambios | RN118 | `400 VALIDATION_ERROR` |
 
 La categoría y el proveedor se validan al crear el producto y cuando la edición propone uno distinto. Si el
 producto conserva la referencia actual, no se vuelve a exigir que esta esté activa.
@@ -137,7 +137,23 @@ producto conserva la referencia actual, no se vuelve a exigir que esta esté act
 | VAL-GEN-04 | JSON de entrada | El cuerpo debe ser JSON válido y legible; un JSON malformado se rechaza | Contrato de API | `400 VALIDATION_ERROR` |
 | VAL-GEN-05 | Parámetros de URL y path | Los valores deben tener el tipo esperado (número, fecha, enumeración) | Contrato de API | `400 VALIDATION_ERROR` |
 
-## 12. Verificación
+## 12. Unidades y presentaciones (V9)
+
+| Código | Campo | Regla | Si incumple |
+|---|---|---|---|
+| VAL-UNI-01 | `CreateProductoRequest.unidadBaseId` | Obligatoria; la unidad debe existir, estar activa y pertenecer a la categoría | `400 VALIDATION_ERROR` |
+| VAL-UNI-02 | `UpdateProductoRequest.unidadBaseId` | Con movimientos registrados debe coincidir con la unidad base actual | `400 VALIDATION_ERROR` |
+| VAL-UNI-03 | `unidadPresentacionId` + `factorPresentacion` | Si se indica presentación, el factor es obligatorio y > 0 | `400 VALIDATION_ERROR` |
+| VAL-UNI-04 | `CategoriaRequest.unidadIds` | No vacía; todos los ids deben existir y estar activos | `400 VALIDATION_ERROR` |
+| VAL-UNI-05 | `EntradaRequest` / `ConsumoItemRequest` | Debe informarse `cantidad` o `cantidadExacta`; la conversión a unidad base debe ser entera y > 0 | `400 VALIDATION_ERROR` |
+| VAL-UNI-06 | `unidadRegistro` | Debe ser la unidad base o una presentación con factor; si no, se requiere `factorAplicado` | `400 VALIDATION_ERROR` |
+| VAL-UNI-07 | `UnidadService.desactivar` | Rechazado si algún producto la referencia como base o presentación | `400 VALIDATION_ERROR` |
+
+La migración V9 añade además CHECKs de base de datos sobre `movimiento_inventario`: `cantidad` solo para
+`ENTRADA`/`CONSUMO`, `variacion` obligatoria en `ENTRADA`/`AJUSTE` y nula en `CONSUMO`, y `cantidad_base` nula en
+`AJUSTE`.
+
+## 13. Verificación
 
 Las restricciones de este documento se contrastaron estáticamente con los DTO de entrada, las anotaciones de
 validación, los servicios y las consultas del código actual. No se ejecutaron compilaciones ni pruebas de runtime;

@@ -207,8 +207,9 @@ class SecurityAccessTest {
     void jefeTaller_stockMinimo_devuelve200() throws Exception {
         org.mockito.Mockito.when(stockMinimoService.actualizarStockMinimo(
                 org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyInt()))
-                .thenReturn(new ProductoResponse(1L, null, null, null, null,
-                        0, 5, false, null, true, null, null, null, null));
+                .thenReturn(new ProductoResponse(1L, null, null, null,
+                        0, 5, false, null, true, null, null, null, null,
+                        null, null, null, null, null, null));
 
         mockMvc.perform(put("/api/productos/1/stock-minimo")
                         .contentType(MediaType.APPLICATION_JSON)

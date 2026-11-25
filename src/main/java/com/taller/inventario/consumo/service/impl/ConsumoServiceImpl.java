@@ -48,7 +48,12 @@ public class ConsumoServiceImpl implements ConsumoService {
                 usuarioId));
 
         List<ConsumoItem> items = request.items().stream()
-                .map(item -> new ConsumoItem(item.productoId(), item.cantidad()))
+                .map(item -> new ConsumoItem(
+                        item.productoId(),
+                        item.cantidad() == null ? 0 : item.cantidad(),
+                        item.unidadRegistro(),
+                        item.factorAplicado(),
+                        item.cantidadExacta()))
                 .toList();
 
         List<MovimientoInventario> movimientos = consumoStockService.validarYDescontarStock(

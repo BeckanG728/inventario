@@ -26,6 +26,9 @@ public record MovimientoDetalle(
         String productoNombre,
         Long consumoId,
         Long usuarioId,
-        String usuarioUsername
+        String usuarioUsername,
+        String unidadRegistro,
+        Integer factorAplicado,
+        Integer cantidadBase
 ) {
 }

@@ -14,13 +14,21 @@ public record EntradaRequest(
         @NotNull(message = "El proveedor es obligatorio")
         Long proveedorId,
 
-        @NotNull(message = "La cantidad es obligatoria")
         @Positive(message = "Cantidad debe ser mayor que cero")
         Integer cantidad,
 
         @NotNull(message = "El costo unitario es obligatorio")
         @PositiveOrZero(message = "Costo unitario no puede ser negativo")
         @Digits(integer = 10, fraction = 2, message = "Costo unitario admite hasta 10 enteros y 2 decimales")
-        BigDecimal costoUnitario
+        BigDecimal costoUnitario,
+
+        String unidadRegistro,
+
+        @Positive(message = "El factor debe ser mayor que cero")
+        Integer factorAplicado,
+
+        @Positive(message = "La cantidad exacta debe ser mayor que cero")
+        @Digits(integer = 10, fraction = 4, message = "La cantidad exacta admite hasta 4 decimales")
+        BigDecimal cantidadExacta
 ) {
 }
