@@ -361,9 +361,9 @@ Listados ligeros y sin paginar de solo los registros activos, pensados para los 
 
 ### 5.1 POST `/api/productos`
 
-Crea un producto. El stock inicial siempre es `0`. El backend genera los dos identificadores: el `codigo` con el
-patrón `PRD-nnnn` (correlativo global, por ejemplo `PRD-0001`) y el SKU con `AAA-ccc-nnnn` (tres siglas del nombre,
-id de categoría y correlativo dentro de ese prefijo, por ejemplo `FIL-002-0007`). El cliente no envía ninguno de los dos.
+Crea un producto. El stock inicial siempre es `0`. El backend genera el `codigo` con el patrón `AAA-nnnn`: `AAA` son
+las tres primeras letras del nombre de la categoría y `nnnn` un correlativo por prefijo (por ejemplo `FIL-0001` para
+la categoría `Filtros`). El cliente no lo envía ni lo edita.
 
 - **Acceso:** `JEFE_TALLER`
 - **Body:**
@@ -422,8 +422,7 @@ Lista productos con paginación y filtros opcionales.
   "content": [
     {
       "id": 12,
-      "codigo": "PRD-0001",
-      "sku": "FIL-002-0007",
+      "codigo": "FIL-0001",
       "nombre": "Filtro de aceite",
       "descripcion": "Filtro para motor 1.6L",
       "unidadMedida": "UNIDAD",
@@ -479,7 +478,7 @@ Actualiza un producto completo.
 - **Respuesta 200 OK:** `ProductoResponse`.
 - **Errores:** `400 VALIDATION_ERROR`, `401`, `403 FORBIDDEN`, `404 NOT_FOUND`.
 
-> El `codigo` y el SKU no se envían ni se editan: los genera el backend y permanecen inmutables.
+> El `codigo` no se envía ni se edita: lo genera el backend y permanece inmutable.
 > Si el producto ya tiene movimientos registrados, solo se permite cambiar `nombre`, `descripcion` y `unidadMedida`;
 > `stockMinimo`, `activo`, categoría y proveedor deben enviarse sin cambios (si no, `400`).
 
@@ -529,8 +528,7 @@ Desactiva lógicamente un producto (`activo = false`).
 | Campo                  | Tipo    | Descripción                             |
 |------------------------|---------|-----------------------------------------|
 | `id`                   | integer | Identificador                           |
-| `codigo`               | string  | Código generado (`PRD-nnnn`), inmutable |
-| `sku`                  | string  | SKU generado (`AAA-ccc-nnnn`)           |
+| `codigo`               | string  | Código generado (`AAA-nnnn`), inmutable |
 | `nombre`               | string  | Nombre                                  |
 | `descripcion`          | string  | Descripción                             |
 | `unidadMedida`         | string  | Unidad de medida                        |
@@ -578,7 +576,7 @@ Listado operativo del stock. **Solo incluye productos activos**; no admite pará
   "content": [
     {
       "id": 12,
-      "codigo": "PRD-0001",
+      "codigo": "FIL-0001",
       "nombre": "Filtro de aceite",
       "categoriaNombre": "Filtros",
       "proveedorRazonSocial": "Repuestos Andinos S.A.",
@@ -794,7 +792,7 @@ consumidos, de modo que el usuario pueda agregarlos sin buscarlos en el catálog
 [
   {
     "productoId": 12,
-    "codigo": "PRD-0001",
+    "codigo": "FIL-0001",
     "nombre": "Abrazadera Aston Martin Thema",
     "unidadMedida": "UNIDAD",
     "stockActual": 89,
@@ -831,7 +829,7 @@ luego por nombre.
 ```json
 [
   {
-    "codigo": "PRD-0001",
+    "codigo": "FIL-0001",
     "nombre": "Filtro de aceite",
     "stockActual": 4,
     "stockMinimo": 10,
@@ -876,7 +874,7 @@ Devuelve el resumen general del inventario, KPIs del mes, alertas y últimos mov
     "total": 6,
     "masUrgentes": [
       {
-        "codigo": "PRD-0001",
+        "codigo": "FIL-0001",
         "nombre": "Filtro de aceite",
         "stockActual": 0,
         "stockMinimo": 10,
@@ -1009,7 +1007,7 @@ Calcula el valor estimado del inventario activo: `stockActual * costoUltimaCompr
   "productosSinCosto": 3,
   "detalle": [
     {
-      "codigo": "PRD-0001",
+      "codigo": "FIL-0001",
       "nombre": "Filtro de aceite",
       "stockActual": 25,
       "costoUltimaCompra": 8.50,

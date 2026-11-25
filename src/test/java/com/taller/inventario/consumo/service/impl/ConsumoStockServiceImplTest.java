@@ -44,7 +44,7 @@ class ConsumoStockServiceImplTest {
 
     private ProductoResponse producto(Long id, int stockActual, boolean activo) {
         return new ProductoResponse(
-                id, "P-" + id, null, "Producto " + id, null, "UND",
+                id, "P-" + id, "Producto " + id, null, "UND",
                 stockActual, 0, false, null, activo, null, null, null, null);
     }
 
