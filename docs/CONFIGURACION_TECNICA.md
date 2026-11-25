@@ -128,14 +128,13 @@ espera. La transacción garantiza que no se produzcan descuentos parciales.
 | Stock | `stockActual` y `stockMinimo` como enteros; el stock inicial es 0 | RN106 |
 | Costo | `costoUltimaCompra` con precisión 12 y escala 2 | RN203 |
 | Movimiento | Conserva tipo, producto, cantidad/variación, stock anterior/posterior, fecha, usuario, costo unitario y motivo. El costo es real en entradas y snapshot de `costoUltimaCompra` en consumos y ajustes | RN208 |
-| Código de producto | Generado por el backend con `PRD-nnnn` (correlativo global) y restricción única en base de datos | RN101 |
-| SKU | `AAA-ccc-nnnn`: siglas del nombre, id de categoría (`%03d`) y correlativo (`%04d`) dentro de ese prefijo. Se calcula antes de persistir, tanto en creación real como en datos demo | RN106 |
+| Código de producto | Generado por el backend con `AAA-nnnn` (AAA = siglas del nombre de la categoría, correlativo por prefijo) y restricción única en base de datos | RN101 |
 | Consumo | Conserva fecha, finalidad, referencia opcional y usuario; se relaciona con los movimientos generados | RN205, RN208 |
 
-El correlativo se obtiene del mayor SKU existente para ese prefijo (`findMaxSkuByPrefijo`) en creación real, y de un
-contador en memoria durante la generación demo. La restricción `UNIQUE` de la columna resuelve la ventana de
-concurrencia entre la comprobación y el guardado. El patrón del SKU es una decisión de implementación; no forma parte
-de la regla de negocio del stock inicial, y no se regenera si cambian categoría o proveedor.
+El correlativo se obtiene del mayor código existente para ese prefijo (`findMaxCodigoByPrefijo`) en creación real, y
+de un contador en memoria durante la generación demo. `bloquearAlta()` serializa las altas reales y la restricción
+`UNIQUE` de la columna resuelve la ventana de concurrencia. El código es una instantánea de la creación: no se
+regenera si cambian categoría o producto.
 
 ## 7. Arquitectura y decisiones de diseño
 

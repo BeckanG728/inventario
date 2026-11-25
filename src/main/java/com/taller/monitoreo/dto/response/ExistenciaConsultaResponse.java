@@ -8,7 +8,6 @@ import java.math.BigDecimal;
 public record ExistenciaConsultaResponse(
         Long id,
         String codigo,
-        String sku,
         String nombre,
         String descripcion,
         String unidadMedida,
@@ -28,7 +27,7 @@ public record ExistenciaConsultaResponse(
     public static ExistenciaConsultaResponse desde(ProductoResponse base, EstadoStock estadoStock,
                                                    Integer cantidadSugerida) {
         return new ExistenciaConsultaResponse(
-                base.id(), base.codigo(), base.sku(), base.nombre(), base.descripcion(),
+                base.id(), base.codigo(), base.nombre(), base.descripcion(),
                 base.unidadMedida(), base.stockActual(), base.stockMinimo(), base.stockCritico(),
                 base.costoUltimaCompra(), base.activo(), base.categoriaId(), base.categoriaNombre(),
                 base.proveedorId(), base.proveedorRazonSocial(), estadoStock, cantidadSugerida);

@@ -1,7 +1,6 @@
 package com.taller.inicializacion.service;
 
 import com.taller.catalogo.api.PreparacionCatalogo;
-import com.taller.catalogo.producto.service.CodigoGenerator;
 import com.taller.catalogo.api.PreparacionCatalogo.CategoriaDemo;
 import com.taller.catalogo.api.PreparacionCatalogo.EstadoProductoDemo;
 import com.taller.catalogo.api.PreparacionCatalogo.ProductoCreado;
@@ -138,7 +137,6 @@ public class DemoDataService {
             }
             Long proveedorId = proveedorIds.get(faker.number().numberBetween(0, proveedorIds.size() - 1));
             productosDemo.add(new ProductoDemo(
-                    CodigoGenerator.generar(i + 1),
                     generarNombreProducto(faker, tipo), descripcion, unidadMedida,
                     stockMinimo, costo, categoriaId, proveedorId));
         }

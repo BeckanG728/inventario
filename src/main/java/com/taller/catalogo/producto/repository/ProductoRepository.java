@@ -44,19 +44,12 @@ public interface ProductoRepository extends JpaRepository<Producto, Long>,
 
     boolean existsByCodigoAndIdNot(String codigo, Long id);
 
-    /** SKU con correlativo más alto de un prefijo; null si no hay ninguno. */
+    /** Código con correlativo más alto de un prefijo; null si no hay ninguno. */
     @Query(value = """
-            select sku from producto where sku like concat(:prefijo, '-%')
-            and sku ~ '-[0-9]+$' order by length(sku) desc, sku desc limit 1
+            select codigo from producto where codigo like concat(:prefijo, '-%')
+            and codigo ~ '-[0-9]+$' order by length(codigo) desc, codigo desc limit 1
             """, nativeQuery = true)
-    String findMaxSkuByPrefijo(@Param("prefijo") String prefijo);
-
-    /** Código PRD con correlativo más alto; null si no hay ninguno. */
-    @Query(value = """
-            select codigo from producto where codigo ~ '^PRD-[0-9]+$'
-            order by length(codigo) desc, codigo desc limit 1
-            """, nativeQuery = true)
-    String findMaxCodigo();
+    String findMaxCodigoByPrefijo(@Param("prefijo") String prefijo);
 
     Optional<Producto> findByIdAndActivoTrue(Long id);
 

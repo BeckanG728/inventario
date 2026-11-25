@@ -54,8 +54,8 @@ Las reglas RN401 a RN403 y RN406 no existen en la numeración original.
   aceptan un valor de stock.
 - **Consecuencia:** cualquier intento de fijar el stock desde la edición del producto no surte efecto; el stock
   solo puede variar mediante movimientos.
-- **Trazabilidad:** el patrón del SKU (`AAA-ccc-nnnn`) es una decisión técnica y se documenta en
-  [CONFIGURACION_TECNICA.md](CONFIGURACION_TECNICA.md). El SKU es una instantánea de la creación: si después cambian
+- **Trazabilidad:** el patrón del código (`AAA-nnnn`) es una decisión técnica y se documenta en
+  [CONFIGURACION_TECNICA.md](CONFIGURACION_TECNICA.md). El código es una instantánea de la creación: si después cambian
   categoría o proveedor, no se regenera.
 
 ### RN108 — Conservación del historial de productos

@@ -24,7 +24,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * RN101 — el código de producto lo genera el backend con el patrón PRD-nnnn.
+ * RN101 — el código de producto lo genera el backend con el patrón AAA-nnnn
+ * (AAA = siglas del nombre de la categoría).
  */
 @ExtendWith(MockitoExtension.class)
 class ProductoServiceImplTest {
@@ -55,7 +56,7 @@ class ProductoServiceImplTest {
     void crear_generaCodigoConElCorrelativoSiguiente() {
         when(categoriaRepository.findById(3L)).thenReturn(Optional.of(categoria()));
         when(proveedorRepository.findById(7L)).thenReturn(Optional.of(proveedor()));
-        when(productoRepository.findMaxCodigo()).thenReturn("PRD-0012");
+        when(productoRepository.findMaxCodigoByPrefijo("FIL")).thenReturn("FIL-0012");
         when(productoRepository.save(any(Producto.class))).thenAnswer(inv -> inv.getArgument(0));
 
         CreateProductoRequest request =
@@ -64,12 +65,12 @@ class ProductoServiceImplTest {
 
         ArgumentCaptor<Producto> captor = ArgumentCaptor.forClass(Producto.class);
         verify(productoRepository).save(captor.capture());
-        assertEquals("PRD-0013", captor.getValue().getCodigo());
+        assertEquals("FIL-0013", captor.getValue().getCodigo());
     }
 
     @Test
     void actualizar_noModificaElCodigoGenerado() {
-        Producto producto = new Producto("PRD-0001", "Filtro", "UNIDAD", 10, categoria(), proveedor());
+        Producto producto = new Producto("FIL-0001", "Filtro", "UNIDAD", 10, categoria(), proveedor());
         when(productoRepository.findByIdForUpdate(12L)).thenReturn(Optional.of(producto));
         when(historialMovimientos.existePorProducto(12L)).thenReturn(false);
         when(categoriaRepository.findById(3L)).thenReturn(Optional.of(categoria()));
@@ -79,6 +80,6 @@ class ProductoServiceImplTest {
                 new UpdateProductoRequest("Filtro nuevo", null, "UNIDAD", 10, null, 3L, 7L);
         service.actualizar(12L, request);
 
-        assertEquals("PRD-0001", producto.getCodigo());
+        assertEquals("FIL-0001", producto.getCodigo());
     }
 }

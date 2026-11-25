@@ -5,7 +5,7 @@ import com.taller.catalogo.categoria.entity.Categoria;
 import com.taller.catalogo.categoria.repository.CategoriaRepository;
 import com.taller.catalogo.producto.entity.Producto;
 import com.taller.catalogo.producto.repository.ProductoRepository;
-import com.taller.catalogo.producto.service.SkuGenerator;
+import com.taller.catalogo.producto.service.CodigoGenerator;
 import com.taller.catalogo.proveedor.entity.Proveedor;
 import com.taller.catalogo.proveedor.repository.ProveedorRepository;
 import lombok.RequiredArgsConstructor;
@@ -70,8 +70,10 @@ public class PreparacionCatalogoImpl implements PreparacionCatalogo {
             Proveedor proveedor = proveedorRepository.findById(producto.proveedorId())
                     .orElseThrow(() -> new IllegalStateException("Proveedor demo no encontrado"));
 
+            String prefijo = CodigoGenerator.prefijo(categoria.getNombre());
+            int correlativo = correlativos.merge(prefijo, 1, Integer::sum);
             Producto entidad = new Producto(
-                    producto.codigo(),
+                    CodigoGenerator.generar(prefijo, correlativo),
                     producto.nombre(),
                     producto.unidadMedida(),
                     producto.stockMinimo(),
@@ -79,9 +81,6 @@ public class PreparacionCatalogoImpl implements PreparacionCatalogo {
                     proveedor);
             entidad.setDescripcion(producto.descripcion());
             entidad.setCostoUltimaCompra(producto.costoUltimaCompra());
-            String prefijo = SkuGenerator.prefijo(producto.nombre(), producto.categoriaId());
-            int correlativo = correlativos.merge(prefijo, 1, Integer::sum);
-            entidad.setSku(SkuGenerator.generar(producto.nombre(), producto.categoriaId(), correlativo));
             nuevos.add(entidad);
         }
 

@@ -5,7 +5,6 @@ import java.math.BigDecimal;
 public record ProductoResponse(
         Long id,
         String codigo,
-        String sku,
         String nombre,
         String descripcion,
         String unidadMedida,

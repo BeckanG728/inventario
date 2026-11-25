@@ -30,9 +30,6 @@ public class Producto {
     @Column(nullable = false, unique = true, length = 50)
     private String codigo;
 
-    @Column(unique = true, length = 50)
-    private String sku;
-
     @Column(nullable = false, length = 150)
     private String nombre;
 

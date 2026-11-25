@@ -15,7 +15,6 @@ import com.taller.catalogo.producto.mapper.ProductoMapper;
 import com.taller.catalogo.producto.repository.ProductoRepository;
 import com.taller.catalogo.producto.service.CodigoGenerator;
 import com.taller.catalogo.producto.service.ProductoService;
-import com.taller.catalogo.producto.service.SkuGenerator;
 import com.taller.catalogo.producto.specification.ProductoSpecification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -47,8 +46,10 @@ public class ProductoServiceImpl implements ProductoService {
         Proveedor proveedor = obtenerProveedorActivo(request.idProveedor());
 
         productoRepository.bloquearAlta();
+        String prefijo = CodigoGenerator.prefijo(categoria.getNombre());
+        String maxCodigo = productoRepository.findMaxCodigoByPrefijo(prefijo);
         String codigo = CodigoGenerator.generar(
-                Math.incrementExact(CodigoGenerator.correlativoDe(productoRepository.findMaxCodigo())));
+                prefijo, Math.incrementExact(CodigoGenerator.correlativoDe(maxCodigo)));
 
         Producto producto = new Producto(
                 codigo,
@@ -61,11 +62,6 @@ public class ProductoServiceImpl implements ProductoService {
         producto.setDescripcion(request.descripcion());
         producto.setStockActual(0);
         producto.setActivo(true);
-
-        String prefijo = SkuGenerator.prefijo(request.nombre().trim(), categoria.getId());
-        String maxSku = productoRepository.findMaxSkuByPrefijo(prefijo);
-        int correlativo = Math.incrementExact(SkuGenerator.correlativoDe(maxSku));
-        producto.setSku(SkuGenerator.generar(request.nombre().trim(), categoria.getId(), correlativo));
 
         Producto guardado = productoRepository.save(producto);
         return productoMapper.toResponse(guardado);

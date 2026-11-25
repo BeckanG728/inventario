@@ -18,7 +18,7 @@ public interface PreparacionCatalogo {
                          String correo, String direccion) {
     }
 
-    record ProductoDemo(String codigo, String nombre, String descripcion, String unidadMedida,
+    record ProductoDemo(String nombre, String descripcion, String unidadMedida,
                         Integer stockMinimo, BigDecimal costoUltimaCompra,
                         Long categoriaId, Long proveedorId) {
     }

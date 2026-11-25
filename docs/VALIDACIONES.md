@@ -47,8 +47,7 @@ restricción única de la base de datos.
 
 | ID | Elemento | Condición | Origen | Si incumple |
 |----|----------|-----------|--------|-------------|
-| VAL-PROD-01 | `codigo` | No se acepta en el body: el backend lo genera con `PRD-nnnn` y garantiza su unicidad | RN101 | — |
-| VAL-PROD-02 | `sku` | No se acepta en el body: el backend lo genera con `AAA-ccc-nnnn` | RN106 | — |
+| VAL-PROD-01 | `codigo` | No se acepta en el body: el backend lo genera con `AAA-nnnn` (AAA = siglas de la categoría) y garantiza su unicidad | RN101 | — |
 | VAL-PROD-03 | `nombre` | Obligatorio; máximo 150 caracteres | Contrato de API | `400 VALIDATION_ERROR` |
 | VAL-PROD-04 | `descripcion` | Opcional; máximo 500 caracteres | Contrato de API | `400 VALIDATION_ERROR` |
 | VAL-PROD-05 | `unidadMedida` | Obligatoria; máximo 30 caracteres | RN103 | `400 VALIDATION_ERROR` |
