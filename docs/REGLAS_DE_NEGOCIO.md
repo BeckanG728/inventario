@@ -66,6 +66,8 @@ Las reglas RN401 a RN403 y RN406 no existen en la numeración original.
   registrados.
 - **Consecuencia:** el producto deja de estar activo, pero sus datos y movimientos permanecen disponibles para
   consulta y trazabilidad.
+- **Reactivación:** un producto desactivado puede volver a activarse (`PATCH /api/productos/{id}/activar`), siempre
+  que su categoría y su proveedor estén activos. La reactivación no altera el stock ni el historial.
 
 ### RN118 — Restricciones de edición con historial
 
@@ -221,23 +223,23 @@ Las reglas RN401 a RN403 y RN406 no existen en la numeración original.
 
 ## 6. Unidades base y presentaciones (V9/V10)
 
-- **RN501 — Catálogo de unidades.** Las unidades son datos de negocio sembrados en V9 (12 códigos: `UND`, `CAJA`,
-  `PAR`, `JUEGO`, `KIT`, `LITRO`, `GALON`, `KG`, `METRO`, `CM`, `ROLLO`, `LATA`). `permite_fragmentacion` solo es
-  `true` en `CAJA`, `METRO` y `ROLLO`. `KG` está disponible pero no se usa en datos demo.
+- **RN501 — Catálogo de unidades.** Las unidades son datos de negocio sembrados en V9 y V10 (22 códigos). Base (`permite_fragmentacion = false`): `UND`, `GALON`, `BOTELLA`, `BIDON`, `TUBO`, `POTE`, `BALDE`, `AEROSOL`, `CARTUCHO`. Presentación (`true`): `CAJA`, `JUEGO`, `PAR`, `PAQUETE`, `BOLSA`, `BLISTER`. `LITRO`, `KG`, `KIT`, `METRO`, `CM`, `ROLLO` y `LATA` siguen sembradas pero no se asocian a ninguna categoría ni se usan en datos demo.
 - **RN502 — Unidad base.** Todo producto tiene una unidad base, inmutable desde su primer movimiento. Stock actual y
-  mínimo se expresan en esa unidad. Quienes controlan el stock por botella, lata o envase usan `UND`, no el contenido
-  físico. La longitud se controla en `CM`.
+  mínimo se expresan en esa unidad. La base es una unidad discreta cuyo sobrante se puede contar y ajustar: `UND` o el
+  envase del producto (galón, botella, tubo, aerosol...). Litro, mililitro y gramo nunca son base. Consecuencia: si se
+  usa parte de un envase, el sistema descuenta el envase entero o nada.
 - **RN503 — Unidades por categoría.** Un producto solo puede usar unidades asociadas a su categoría
-  (`categoria_unidad`). El alta de categoría exige al menos una unidad. No se puede desactivar una unidad usada por un
-  producto.
+  (`categoria_unidad`). El usuario no crea ni asigna unidades: las relaciones de las 10 categorías base se siembran en
+  V10 y toda categoría nueva recibe solo `UND`. El catálogo de unidades no se modifica desde la aplicación.
+  Una presentación (p. ej. caja de 12 botellas) puede agrupar cualquier base de su categoría.
 - **RN504 — Presentación y factor.** `unidad_presentacion_id` y `factor_presentacion` son el valor por defecto del
   producto. Cada movimiento puede registrar su propia presentación y factor; cambiarlos no altera el stock ni el
   histórico, porque cada movimiento conserva su snapshot.
 - **RN505 — Entradas.** La cantidad introducida se convierte a unidades base (`cantidad × factor`). El costo unitario
-  se divide por el factor para valorar cada unidad base. Solo se admite decimal en longitud (p. ej. 1.5 m = 150 cm).
+  se divide por el factor para valorar cada unidad base. Solo se admite decimal en longitud (METRO/ROLLO), hoy sin categorías asociadas.
 - **RN506 — Consumos y ajustes.** Los consumos descuentan unidades base enteras. Los ajustes fijan el stock en unidad
   base y no tienen `cantidad_base` (solo `variacion`).
-- **RN507 — Sin movimiento de fragmentación.** Abrir una caja o un rollo no genera un movimiento adicional: la
+- **RN507 — Sin movimiento de fragmentación.** Abrir una caja o un paquete no genera un movimiento adicional: la
   conversión ya ocurrió al registrar la entrada. Crear un ajuste para "registrar lo que queda" sería doble conteo.
 
 ## 7. Documentos relacionados

@@ -23,10 +23,4 @@ public interface UnidadRepository extends JpaRepository<Unidad, Long> {
             order by u.nombre asc
             """, nativeQuery = true)
     List<Unidad> findActivasPorCategoria(@Param("categoriaId") Long categoriaId);
-
-    @Query(value = """
-            select count(*) > 0 from producto p
-            where p.unidad_base_id = :unidadId or p.unidad_presentacion_id = :unidadId
-            """, nativeQuery = true)
-    boolean esUnidadEnUso(@Param("unidadId") Long unidadId);
 }

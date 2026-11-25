@@ -1,7 +1,6 @@
 package com.taller.catalogo.unidad.service.impl;
 
 import com.taller.catalogo.unidad.dto.response.UnidadResponse;
-import com.taller.catalogo.unidad.entity.Unidad;
 import com.taller.catalogo.unidad.repository.UnidadRepository;
 import com.taller.catalogo.unidad.service.UnidadService;
 import lombok.RequiredArgsConstructor;
@@ -33,17 +32,5 @@ public class UnidadServiceImpl implements UnidadService {
         return unidadRepository.findActivasPorCategoria(categoriaId).stream()
                 .map(UnidadResponse::from)
                 .toList();
-    }
-
-    @Override
-    @Transactional
-    public UnidadResponse desactivar(Long id) {
-        Unidad unidad = unidadRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Unidad no encontrada"));
-        if (unidadRepository.esUnidadEnUso(id)) {
-            throw new IllegalArgumentException("No se puede desactivar una unidad usada por algún producto");
-        }
-        unidad.setActivo(false);
-        return UnidadResponse.from(unidad);
     }
 }

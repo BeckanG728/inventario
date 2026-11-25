@@ -19,7 +19,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -35,34 +34,14 @@ public class PreparacionCatalogoImpl implements PreparacionCatalogo {
     public List<Long> crearCategorias(List<CategoriaDemo> categorias) {
         List<Long> ids = new ArrayList<>(categorias.size());
         for (CategoriaDemo categoria : categorias) {
-            String nombre = categoria.nombre();
-            // V10 ya siembra las categorías base y sus unidades: se reutilizan en vez de duplicarlas.
-            Optional<Categoria> existente = categoriaRepository.findByNombreIgnoreCase(nombre);
-            if (existente.isPresent()) {
-                ids.add(existente.get().getId());
-                continue;
-            }
-            ids.add(categoriaRepository.save(
-                    new Categoria(nombreCategoriaUnico(nombre), categoria.descripcion())).getId());
+            // V10 siembra las categorías base con sus unidades: el demo solo las reutiliza y nunca
+            // crea categorías ni relaciones categoría-unidad por su cuenta.
+            Categoria existente = categoriaRepository.findByNombreIgnoreCase(categoria.nombre())
+                    .orElseThrow(() -> new IllegalStateException(
+                            "FATAL: la categoría base " + categoria.nombre() + " no existe, revisar V10"));
+            ids.add(existente.getId());
         }
         return ids;
-    }
-
-    @Override
-    @Transactional
-    public void asociarUnidades(List<CategoriaUnidadDemo> asociaciones) {
-        for (CategoriaUnidadDemo asociacion : asociaciones) {
-            Categoria categoria = categoriaRepository.findById(asociacion.categoriaId())
-                    .orElseThrow(() -> new IllegalStateException("Categoría demo no encontrada"));
-            Unidad unidad = unidadRepository.findByCodigoIgnoreCase(asociacion.unidadCodigo())
-                    .orElseThrow(() -> new IllegalStateException(
-                            "Unidad de negocio no encontrada: " + asociacion.unidadCodigo()));
-            if (!categoria.getUnidades().contains(unidad)) {
-                java.util.Set<Unidad> unidades = new java.util.LinkedHashSet<>(categoria.getUnidades());
-                unidades.add(unidad);
-                categoria.reemplazarUnidades(unidades);
-            }
-        }
     }
 
     @Override
@@ -145,14 +124,5 @@ public class PreparacionCatalogoImpl implements PreparacionCatalogo {
     @Transactional(readOnly = true)
     public boolean hayProductos() {
         return productoRepository.count() > 0;
-    }
-
-    private String nombreCategoriaUnico(String base) {
-        String nombre = base;
-        int sufijo = 1;
-        while (categoriaRepository.existsByNombreIgnoreCase(nombre)) {
-            nombre = base + " " + sufijo++;
-        }
-        return nombre;
     }
 }

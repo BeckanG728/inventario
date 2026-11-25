@@ -24,10 +24,6 @@ public interface PreparacionCatalogo {
                         String unidadBaseCodigo, String unidadPresentacionCodigo, Integer factorPresentacion) {
     }
 
-    /** Asociación categoría ↔ unidad para el catálogo demo. */
-    record CategoriaUnidadDemo(Long categoriaId, String unidadCodigo) {
-    }
-
     record ProductoCreado(Long id, Integer stockMinimo, BigDecimal costoUltimaCompra, Long proveedorId) {
     }
 
@@ -35,8 +31,6 @@ public interface PreparacionCatalogo {
     }
 
     List<Long> crearCategorias(List<CategoriaDemo> categorias);
-
-    void asociarUnidades(List<CategoriaUnidadDemo> asociaciones);
 
     List<Long> crearProveedores(List<ProveedorDemo> proveedores);
 

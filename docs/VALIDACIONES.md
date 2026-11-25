@@ -59,6 +59,7 @@ restricción única de la base de datos.
 | VAL-PROD-11 | `stockActual` | No forma parte de los datos de alta o edición; el stock inicial es 0 y solo cambia por movimientos | RN106 | No se acepta como dato editable |
 | VAL-PROD-12 | Alias de identificadores | `idCategoria`, `categoriaId`, `idProveedor` y `proveedorId` se aceptan como alias de `id_categoria` e `id_proveedor` | Contrato de API | — |
 | VAL-PROD-13 | Edición con historial | Con movimientos registrados, la unidad base es inmutable; solo se aceptan cambios en `nombre`, `descripcion`, presentación y factor; `stockMinimo`, `activo`, categoría y proveedor deben enviarse sin cambios | RN118 | `400 VALIDATION_ERROR` |
+| VAL-PROD-14 | Reactivación (`PATCH /api/productos/{id}/activar`) | No lleva body; el producto debe existir y su categoría y proveedor deben estar activos. Si ya está activo, no cambia nada | RN108 | `404 NOT_FOUND` si no existe; `400 VALIDATION_ERROR` si la categoría o el proveedor están inactivos |
 
 La categoría y el proveedor se validan al crear el producto y cuando la edición propone uno distinto. Si el
 producto conserva la referencia actual, no se vuelve a exigir que esta esté activa.
@@ -143,11 +144,11 @@ producto conserva la referencia actual, no se vuelve a exigir que esta esté act
 |---|---|---|---|
 | VAL-UNI-01 | `CreateProductoRequest.unidadBaseId` | Obligatoria; la unidad debe existir, estar activa y pertenecer a la categoría | `400 VALIDATION_ERROR` |
 | VAL-UNI-02 | `UpdateProductoRequest.unidadBaseId` | Con movimientos registrados debe coincidir con la unidad base actual | `400 VALIDATION_ERROR` |
-| VAL-UNI-03 | `unidadPresentacionId` + `factorPresentacion` | Si se indica presentación, el factor es obligatorio y > 0 | `400 VALIDATION_ERROR` |
-| VAL-UNI-04 | `CategoriaRequest.unidadIds` | No vacía; todos los ids deben existir y estar activos | `400 VALIDATION_ERROR` |
+| VAL-UNI-03 | `unidadPresentacionId` + `factorPresentacion` | Si se indica presentación, el factor es obligatorio y > 0. Sin presentación el factor no aplica: el formulario lo deshabilita en 0 y no lo envía | `400 VALIDATION_ERROR` |
+| VAL-UNI-04 | `CategoriaRequest` | No admite unidades: solo `nombre` y `descripcion`. Toda categoría nueva recibe `UND`; las relaciones base provienen de V10 | — |
 | VAL-UNI-05 | `EntradaRequest` / `ConsumoItemRequest` | Debe informarse `cantidad` o `cantidadExacta`; la conversión a unidad base debe ser entera y > 0 | `400 VALIDATION_ERROR` |
 | VAL-UNI-06 | `unidadRegistro` | Debe ser la unidad base o una presentación con factor; si no, se requiere `factorAplicado` | `400 VALIDATION_ERROR` |
-| VAL-UNI-07 | `UnidadService.desactivar` | Rechazado si algún producto la referencia como base o presentación | `400 VALIDATION_ERROR` |
+| VAL-UNI-07 | `unidadBaseId` / `unidadPresentacionId` | La base debe ser una unidad con `permite_fragmentacion = false` y la presentación una con `true`; ambas deben pertenecer a la categoría del producto | `400 VALIDATION_ERROR` |
 
 La migración V9 añade además CHECKs de base de datos sobre `movimiento_inventario`: `cantidad` solo para
 `ENTRADA`/`CONSUMO`, `variacion` obligatoria en `ENTRADA`/`AJUSTE` y nula en `CONSUMO`, y `cantidad_base` nula en

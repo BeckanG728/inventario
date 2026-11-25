@@ -5,10 +5,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.taller.catalogo.categoria.dto.request.CategoriaRequest;
 import com.taller.catalogo.categoria.dto.response.CategoriaResponse;
 import com.taller.catalogo.categoria.entity.Categoria;
 import com.taller.catalogo.categoria.repository.CategoriaRepository;
+import com.taller.catalogo.unidad.entity.Unidad;
+import com.taller.catalogo.unidad.repository.UnidadRepository;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -21,15 +25,31 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
-/** Listado paginado de categorías. */
+/** Alta y listado paginado de categorías. */
 @ExtendWith(MockitoExtension.class)
 class CategoriaServiceImplTest {
 
     @Mock
     private CategoriaRepository repository;
 
+    @Mock
+    private UnidadRepository unidadRepository;
+
     @InjectMocks
     private CategoriaServiceImpl service;
+
+    @Test
+    void crear_categoriaNueva_recibeSoloUND() {
+        Unidad und = new Unidad("UND", "Unidad", false);
+        when(repository.existsByNombreIgnoreCase("Cables")).thenReturn(false);
+        when(unidadRepository.findByCodigoIgnoreCase("UND")).thenReturn(Optional.of(und));
+        when(repository.save(any(Categoria.class))).thenAnswer(invocacion -> invocacion.getArgument(0));
+
+        CategoriaResponse respuesta = service.crear(new CategoriaRequest("Cables", null));
+
+        assertEquals(1, respuesta.unidades().size());
+        assertEquals("UND", respuesta.unidades().get(0).codigo());
+    }
 
     @Test
     @SuppressWarnings("unchecked")

@@ -101,6 +101,7 @@ El contrato detallado se encuentra en [CATALOGO_ENDPOINTS.md](CATALOGO_ENDPOINTS
 
 - Permite listar productos con paginación, filtro parcial por nombre y filtro por categoría.
 - El listado incluye productos activos e inactivos.
+- Un producto desactivado puede reactivarse mientras su categoría y su proveedor sigan activos (RN108).
 - Permite consultar el stock de uno o varios productos por identificador.
 - La consulta de existencias exige al menos un identificador, ignora identificadores repetidos y rechaza productos
   inexistentes o inactivos según el contrato.
@@ -121,20 +122,26 @@ datos en [VALIDACIONES.md](VALIDACIONES.md).
 
 **Origen:** RN501 a RN507, RN103, RN118.
 
-- El catálogo de unidades (`UND`, `CAJA`, `PAR`, `JUEGO`, `KIT`, `LITRO`, `GALON`, `KG`, `METRO`, `CM`, `ROLLO`, `LATA`)
-  es dato de negocio sembrado en la migración V9; no depende del perfil ni del seeder demo.
+- El catálogo de unidades (22 códigos) es dato de negocio sembrado en las migraciones V9 y V10; no depende del perfil ni
+  del seeder demo. El usuario no crea, modifica ni desactiva unidades. Son unidades base `UND`, `GALON`, `BOTELLA`,
+  `BIDON`, `TUBO`, `POTE`, `BALDE`, `AEROSOL` y `CARTUCHO`; son presentaciones `CAJA`, `JUEGO`, `PAR`, `PAQUETE`,
+  `BOLSA` y `BLISTER`. `LITRO`, `KG`, `KIT`, `METRO`, `CM`, `ROLLO` y `LATA` siguen sembradas, pero no se asocian a
+  ninguna categoría.
 - Cada producto tiene una unidad base estable e inmutable desde su primer movimiento. Las existencias y los movimientos
-  se expresan en esa unidad. Los envases de consumo único (botella de 1 L, envase de 250 g, lata) se controlan como
-  `UND`; la longitud se controla en `CM`.
-- Cada categoría tiene un conjunto de unidades válidas. El alta de categoría exige al menos una; el frontend solo
-  ofrece esas unidades al crear o editar un producto.
-- Un producto puede tener una presentación comercial (`CAJA`, `METRO`, `ROLLO`) con un factor entero. Una entrada de
-  3 cajas de 20 unidades registra 60 unidades base y divide el costo por el factor.
-- Solo se admite cantidad decimal en longitud (1,5 m = 150 cm). No se permite "media caja".
+  se expresan en esa unidad. La base es una unidad discreta cuyo sobrante se puede contar y ajustar: `UND` o el envase
+  del producto (galón, botella, tubo, aerosol...). Litro, mililitro y gramo nunca son base; si se usa parte de un
+  envase, el sistema descuenta el envase entero.
+- Cada categoría tiene un conjunto de unidades válidas. Las relaciones de las 10 categorías base se siembran en la
+  migración V10 y toda categoría nueva recibe solo `UND`; el usuario no asigna unidades. El frontend solo ofrece esas
+  unidades al crear o editar un producto, separadas en bases y presentaciones.
+- Un producto puede tener una presentación comercial (`CAJA`, `JUEGO`, `PAR`, `PAQUETE`, `BOLSA`, `BLISTER`) con un
+  factor entero, que agrupa unidades base de su categoría (p. ej. caja de 12 botellas). Sin presentación no hay
+  factor. Una entrada de 3 cajas de 20 unidades registra 60 unidades base y divide el costo por el factor.
+- Solo se admite cantidad decimal en longitud (METRO/ROLLO, hoy sin categorías asociadas). No se permite "media caja".
 - La apertura de un envase no genera un movimiento adicional: la conversión ya ocurrió al registrar la operación.
   Cada movimiento conserva como snapshot la unidad introducida, el factor aplicado y la cantidad en unidad base.
-- El endpoint `GET /api/unidades` expone el catálogo; `GET /api/categorias/{id}/unidades` y
-  `PUT /api/categorias/{id}/unidades` gestionan la asociación por categoría.
+- Los endpoints `GET /api/unidades` y `GET /api/categorias/{id}/unidades` son de solo lectura: exponen el catálogo y
+  la asociación por categoría.
 
 ## 11. Verificación
 

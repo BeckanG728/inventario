@@ -59,6 +59,7 @@ public class ProductoServiceImpl implements ProductoService {
         if (presentacion != null && request.factorPresentacion() == null) {
             throw new IllegalArgumentException("El factor de presentación es obligatorio cuando se indica una presentación");
         }
+        validarCoherenciaBasePresentacion(unidadBase, presentacion);
 
         Producto producto = new Producto(
                 codigo,
@@ -144,6 +145,23 @@ public class ProductoServiceImpl implements ProductoService {
         return productoMapper.toResponse(producto);
     }
 
+    @Override
+    @Transactional
+    public ProductoResponse activar(Long id) {
+        Producto producto = obtenerProducto(id);
+
+        // Un producto no puede reactivarse si su categoría o proveedor siguen inactivos (mismas reglas que al crear).
+        if (!producto.getCategoria().isActivo()) {
+            throw new IllegalArgumentException("No se puede activar el producto: su categoría está inactiva");
+        }
+        if (!producto.getProveedor().isActivo()) {
+            throw new IllegalArgumentException("No se puede activar el producto: su proveedor está inactivo");
+        }
+
+        producto.setActivo(true);
+        return productoMapper.toResponse(producto);
+    }
+
     private Producto obtenerProducto(Long id) {
         return productoRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ProductoNotFoundException(id));
@@ -173,6 +191,10 @@ public class ProductoServiceImpl implements ProductoService {
         }
         Unidad unidad = resolverUnidad(id);
         validarUnidadDeCategoria(unidad, categoria);
+        if (unidad.isPermiteFragmentacion()) {
+            throw new IllegalArgumentException("La unidad " + unidad.getCodigo()
+                    + " es una presentación y no puede usarse como unidad base");
+        }
         return unidad;
     }
 
@@ -182,7 +204,25 @@ public class ProductoServiceImpl implements ProductoService {
         }
         Unidad unidad = resolverUnidad(id);
         validarUnidadDeCategoria(unidad, categoria);
+        if (!unidad.isPermiteFragmentacion()) {
+            throw new IllegalArgumentException("La unidad " + unidad.getCodigo()
+                    + " no permite fragmentación y no puede usarse como presentación");
+        }
         return unidad;
+    }
+
+    private void validarCoherenciaBasePresentacion(Unidad base, Unidad presentacion) {
+        if (presentacion == null) {
+            return;
+        }
+        String baseEsperada = switch (presentacion.getCodigo()) {
+            case "METRO", "ROLLO" -> "CM";
+            default -> null;
+        };
+        if (baseEsperada != null && !baseEsperada.equals(base.getCodigo())) {
+            throw new IllegalArgumentException("La presentación " + presentacion.getCodigo()
+                    + " requiere la unidad base " + baseEsperada);
+        }
     }
 
     private Unidad resolverUnidad(Long id) {
@@ -246,6 +286,7 @@ public class ProductoServiceImpl implements ProductoService {
         if (presentacion != null && request.factorPresentacion() == null) {
             throw new IllegalArgumentException("El factor de presentación es obligatorio cuando se indica una presentación");
         }
+        validarCoherenciaBasePresentacion(unidadBase, presentacion);
         producto.setUnidadPresentacion(presentacion);
         producto.setFactorPresentacion(request.factorPresentacion());
 

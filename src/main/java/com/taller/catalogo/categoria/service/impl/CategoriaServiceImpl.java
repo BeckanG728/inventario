@@ -9,7 +9,6 @@ import com.taller.catalogo.categoria.specification.CategoriaSpecification;
 import com.taller.catalogo.unidad.entity.Unidad;
 import com.taller.catalogo.unidad.repository.UnidadRepository;
 import com.taller.compartido.exception.DuplicateResourceException;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -41,34 +40,14 @@ public class CategoriaServiceImpl implements CategoriaService {
         if (repository.existsByNombreIgnoreCase(nombre)) {
             throw new DuplicateResourceException("Ya existe una categoría con el nombre " + nombre);
         }
-        List<Long> unidadIds = request.unidadIds();
-        if (unidadIds == null || unidadIds.isEmpty()) {
-            // V10 siembra las relaciones de las categorías base. Para una categoría nueva,
-            // UND es el mínimo seguro: no permite combinar unidades incoherentes.
-            Unidad und = unidadRepository.findByCodigoIgnoreCase("UND")
-                    .orElseThrow(() -> new IllegalStateException("FATAL: la unidad UND no existe, revisar V9"));
-            unidadIds = List.of(und.getId());
-        }
+        // Las unidades base y sus relaciones las siembra V10. Una categoría nueva parte solo con UND,
+        // la unidad mínima segura; el usuario no crea ni asigna unidades.
+        Unidad und = unidadRepository.findByCodigoIgnoreCase("UND")
+                .orElseThrow(() -> new IllegalStateException("FATAL: la unidad UND no existe, revisar V9"));
         Categoria categoria = new Categoria(nombre, blankToNull(request.descripcion()));
-        categoria.reemplazarUnidades(resolverUnidades(unidadIds));
+        categoria.reemplazarUnidades(Set.of(und));
         Categoria saved = repository.save(categoria);
         return CategoriaResponse.from(saved);
-    }
-
-    private Set<Unidad> resolverUnidades(List<Long> unidadIds) {
-        if (unidadIds == null || unidadIds.isEmpty()) {
-            throw new IllegalArgumentException("La categoría debe tener al menos una unidad válida");
-        }
-        Set<Unidad> unidades = new LinkedHashSet<>();
-        for (Long unidadId : unidadIds) {
-            Unidad unidad = unidadRepository.findById(unidadId)
-                    .orElseThrow(() -> new IllegalArgumentException("Unidad no encontrada: " + unidadId));
-            if (!unidad.isActivo()) {
-                throw new IllegalArgumentException("Unidad inactiva: " + unidad.getCodigo());
-            }
-            unidades.add(unidad);
-        }
-        return unidades;
     }
 
     /** Listado paginado: orden por nombre y luego id; filtros opcionales por nombre (parcial) y estado. */
