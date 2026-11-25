@@ -43,11 +43,11 @@ public class ProductoController {
             @RequestParam(required = false) Long categoria,
             @RequestParam(required = false) String codigo,
             @RequestParam(required = false) Long proveedor,
-            @RequestParam(required = false) String unidadMedida,
+            @RequestParam(required = false) Long unidadBaseId,
             @RequestParam(required = false) Boolean activo,
             @RequestParam(required = false) Boolean stockCritico) {
         ProductoFiltro filtro = new ProductoFiltro(
-                nombre, categoria, codigo, proveedor, unidadMedida, activo, stockCritico);
+                nombre, categoria, codigo, proveedor, unidadBaseId, activo, stockCritico);
         return ResponseEntity.ok(PaginaResponse.from(productoService.listar(page, size, filtro)));
     }
 
@@ -61,5 +61,10 @@ public class ProductoController {
     @PatchMapping("/{id}/desactivar")
     public ResponseEntity<ProductoResponse> desactivar(@PathVariable Long id) {
         return ResponseEntity.ok(productoService.desactivar(id));
+    }
+
+    @PatchMapping("/{id}/activar")
+    public ResponseEntity<ProductoResponse> activar(@PathVariable Long id) {
+        return ResponseEntity.ok(productoService.activar(id));
     }
 }

@@ -8,10 +8,12 @@ import com.taller.inventario.movimiento.entity.MovimientoInventario;
 import com.taller.inventario.movimiento.enums.TipoMovimiento;
 import com.taller.inventario.movimiento.repository.MovimientoInventarioRepository;
 import com.taller.catalogo.producto.dto.response.ProductoResponse;
+import com.taller.catalogo.unidad.service.ConversorUnidades;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
@@ -39,13 +41,17 @@ class ConsumoStockServiceImplTest {
     @Mock
     private MovimientoInventarioRepository movimientoInventarioRepository;
 
+    @Spy
+    private ConversorUnidades conversorUnidades = new ConversorUnidades();
+
     @InjectMocks
     private ConsumoStockServiceImpl service;
 
     private ProductoResponse producto(Long id, int stockActual, boolean activo) {
         return new ProductoResponse(
-                id, "P-" + id, "Producto " + id, null, "UND",
-                stockActual, 0, false, null, activo, null, null, null, null);
+                id, "P-" + id, "Producto " + id, null,
+                stockActual, 0, false, null, activo, null, null, null, null,
+                null, "UND", null, null, null, null);
     }
 
     @Test

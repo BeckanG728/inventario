@@ -107,6 +107,8 @@ public class DemoDataService {
         for (int i = 0; i < categoriaIds.size(); i++) {
             idPorCategoriaBase.put(DemoData.CATEGORIAS_BASE.get(i), categoriaIds.get(i));
         }
+
+        // Las relaciones categoría-unidad vienen de la migración V10; el demo no las crea.
         Map<String, List<String>> tiposPorCategoria = new HashMap<>();
         for (String tipo : DemoData.TIPOS_PRODUCTO) {
             String nombreCategoria = DemoData.CATEGORIA_POR_TIPO.get(tipo);
@@ -120,13 +122,17 @@ public class DemoDataService {
         List<ProductoDemo> productosDemo = new ArrayList<>(props.getProductos());
         for (int i = 0; i < props.getProductos(); i++) {
             String tipo = tiposPlanificados.get(i);
-            List<String> unidades = DemoData.UNIDADES_POR_TIPO.get(tipo);
+            List<DemoData.UnidadDemo> opcionesUnidad = DemoData.UNIDADES_POR_TIPO.get(tipo);
             DemoData.RangoCosto rangoCosto = DemoData.COSTOS_POR_TIPO.get(tipo);
-            if (unidades == null || unidades.isEmpty() || rangoCosto == null) {
+            if (opcionesUnidad == null || opcionesUnidad.isEmpty() || rangoCosto == null) {
                 throw new IllegalStateException("FATAL: catálogo demo incompleto para el tipo " + tipo);
             }
-            String unidadMedida = faker.options().option(unidades.toArray(String[]::new));
-            Integer stockMinimo = faker.number().numberBetween(5, 50);
+            DemoData.UnidadDemo unidadDemo = opcionesUnidad.get(
+                    faker.number().numberBetween(0, opcionesUnidad.size()));
+            // El stock mínimo se expresa en la unidad base, así que se escala con el tamaño típico de reposición.
+            DemoData.RangoCantidad rangoEntrada = DemoData.CANTIDADES_ENTRADA_POR_TIPO.get(tipo);
+            int minimoBase = rangoEntrada == null ? 5 : Math.max(1, rangoEntrada.minimo() / 2);
+            Integer stockMinimo = faker.number().numberBetween(minimoBase, minimoBase * 2 + 1);
             String descripcion = truncar(faker.lorem().sentence(10), 500);
             BigDecimal costo = BigDecimal.valueOf(faker.number().numberBetween(
                     (int) rangoCosto.minimoCentimos(), (int) rangoCosto.maximoCentimos()), 2);
@@ -137,8 +143,9 @@ public class DemoDataService {
             }
             Long proveedorId = proveedorIds.get(faker.number().numberBetween(0, proveedorIds.size() - 1));
             productosDemo.add(new ProductoDemo(
-                    generarNombreProducto(faker, tipo), descripcion, unidadMedida,
-                    stockMinimo, costo, categoriaId, proveedorId));
+                    generarNombreProducto(faker, tipo), descripcion,
+                    stockMinimo, costo, categoriaId, proveedorId,
+                    unidadDemo.base(), unidadDemo.presentacion(), unidadDemo.factor()));
         }
         List<ProductoCreado> productos = preparacionCatalogo.crearProductos(productosDemo);
 
@@ -234,7 +241,7 @@ public class DemoDataService {
                 tipoPorProducto, eventos, inicioHistorial, ahora);
         generarConsumos(faker, usuarios, productosCreados, tipoPorProducto,
                 inicioHistorial.plus(30, ChronoUnit.DAYS), ahora, eventos);
-        generarAjustes(faker, productosCreados, ahora.minus(90, ChronoUnit.DAYS), ahora, eventos);
+        generarAjustes(faker, productosCreados, tipoPorProducto, ahora.minus(90, ChronoUnit.DAYS), ahora, eventos);
         eventos.sort(Comparator.comparing(EventoHistorial::fecha));
 
         List<MovimientoDemo> movimientos = new ArrayList<>();
@@ -313,7 +320,7 @@ public class DemoDataService {
         Map<String, List<ProductoCreado>> productosPorTipo = new HashMap<>();
         for (ProductoCreado producto : productosCreados) {
             String tipo = tipoPorProducto.get(producto.id());
-            if (tipo == null || DemoData.TIPOS_HERRAMIENTA.contains(tipo)) {
+            if (tipo == null) {
                 continue;
             }
             productosPorTipo.computeIfAbsent(tipo, clave -> new ArrayList<>()).add(producto);
@@ -362,13 +369,12 @@ public class DemoDataService {
     }
 
     private void generarAjustes(Faker faker, List<ProductoCreado> productosCreados,
+                                Map<Long, String> tipoPorProducto,
                                 Instant desde, Instant hasta, List<EventoHistorial> eventos) {
         for (int i = 0; i < props.getAjustes(); i++) {
             ProductoCreado producto = productosCreados.get(
                     faker.number().numberBetween(0, productosCreados.size() - 1));
-            int objetivo = faker.number().numberBetween(1, 100) <= 60
-                    ? faker.number().numberBetween(0, 10)
-                    : faker.number().numberBetween(0, 200);
+            int objetivo = DemoData.stockObjetivoAjuste(tipoPorProducto.get(producto.id()), faker);
             eventos.add(new EventoAjuste(
                     fechaAleatoria(faker, desde, hasta),
                     producto,

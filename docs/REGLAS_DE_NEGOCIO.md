@@ -66,12 +66,14 @@ Las reglas RN401 a RN403 y RN406 no existen en la numeración original.
   registrados.
 - **Consecuencia:** el producto deja de estar activo, pero sus datos y movimientos permanecen disponibles para
   consulta y trazabilidad.
+- **Reactivación:** un producto desactivado puede volver a activarse (`PATCH /api/productos/{id}/activar`), siempre
+  que su categoría y su proveedor estén activos. La reactivación no altera el stock ni el historial.
 
 ### RN118 — Restricciones de edición con historial
 
 - **Enunciado:** Cuando un producto ya tiene movimientos registrados, solo se pueden modificar su nombre, su
-  descripción y su unidad de medida. El código, la categoría, el proveedor, el stock mínimo y el estado activo deben
-  permanecer sin cambios.
+  descripción, su presentación comercial y su factor. **La unidad base es inmutable** (RN502). El código, la
+  categoría, el proveedor, el stock mínimo y el estado activo deben permanecer sin cambios.
 - **Condiciones:** la edición completa del producto debe enviar esos campos con sus valores actuales. La
   actualización específica del stock mínimo es una excepción: se realiza directamente y no comprueba el historial de
   movimientos.
@@ -173,7 +175,7 @@ Las reglas RN401 a RN403 y RN406 no existen en la numeración original.
 
 - **Enunciado:** Hay bajo stock cuando el stock actual es menor o igual al stock mínimo. Solo se consideran los
   productos activos.
-- **Condiciones:** el stock actual y el stock mínimo se comparan en la misma unidad de medida del producto.
+- **Condiciones:** el stock actual y el stock mínimo se comparan en la unidad base del producto.
 - **Consecuencia:** el producto se incluye en las alertas y en el listado operativo de existencias cuando se filtra
   por estado `BAJO` o `SIN_STOCK`; si el stock supera el mínimo, deja de considerarse en riesgo.
 - **Trazabilidad:** la exposición del indicador `stockCritico` en las respuestas se especifica en
@@ -219,7 +221,28 @@ Las reglas RN401 a RN403 y RN406 no existen en la numeración original.
 - **Trazabilidad:** el mecanismo de transacción de solo lectura se documenta en
   [CONFIGURACION_TECNICA.md](CONFIGURACION_TECNICA.md).
 
-## 6. Documentos relacionados
+## 6. Unidades base y presentaciones (V9/V10)
+
+- **RN501 — Catálogo de unidades.** Las unidades son datos de negocio sembrados en V9 y V10 (22 códigos). Base (`permite_fragmentacion = false`): `UND`, `GALON`, `BOTELLA`, `BIDON`, `TUBO`, `POTE`, `BALDE`, `AEROSOL`, `CARTUCHO`. Presentación (`true`): `CAJA`, `JUEGO`, `PAR`, `PAQUETE`, `BOLSA`, `BLISTER`. `LITRO`, `KG`, `KIT`, `METRO`, `CM`, `ROLLO` y `LATA` siguen sembradas pero no se asocian a ninguna categoría ni se usan en datos demo.
+- **RN502 — Unidad base.** Todo producto tiene una unidad base, inmutable desde su primer movimiento. Stock actual y
+  mínimo se expresan en esa unidad. La base es una unidad discreta cuyo sobrante se puede contar y ajustar: `UND` o el
+  envase del producto (galón, botella, tubo, aerosol...). Litro, mililitro y gramo nunca son base. Consecuencia: si se
+  usa parte de un envase, el sistema descuenta el envase entero o nada.
+- **RN503 — Unidades por categoría.** Un producto solo puede usar unidades asociadas a su categoría
+  (`categoria_unidad`). El usuario no crea ni asigna unidades: las relaciones de las 10 categorías base se siembran en
+  V10 y toda categoría nueva recibe solo `UND`. El catálogo de unidades no se modifica desde la aplicación.
+  Una presentación (p. ej. caja de 12 botellas) puede agrupar cualquier base de su categoría.
+- **RN504 — Presentación y factor.** `unidad_presentacion_id` y `factor_presentacion` son el valor por defecto del
+  producto. Cada movimiento puede registrar su propia presentación y factor; cambiarlos no altera el stock ni el
+  histórico, porque cada movimiento conserva su snapshot.
+- **RN505 — Entradas.** La cantidad introducida se convierte a unidades base (`cantidad × factor`). El costo unitario
+  se divide por el factor para valorar cada unidad base. Solo se admite decimal en longitud (METRO/ROLLO), hoy sin categorías asociadas.
+- **RN506 — Consumos y ajustes.** Los consumos descuentan unidades base enteras. Los ajustes fijan el stock en unidad
+  base y no tienen `cantidad_base` (solo `variacion`).
+- **RN507 — Sin movimiento de fragmentación.** Abrir una caja o un paquete no genera un movimiento adicional: la
+  conversión ya ocurrió al registrar la entrada. Crear un ajuste para "registrar lo que queda" sería doble conteo.
+
+## 7. Documentos relacionados
 
 - [VALIDACIONES.md](VALIDACIONES.md): restricciones de entrada, formatos, longitudes, rangos y unicidad.
 - [POLITICAS_DE_SEGURIDAD.md](POLITICAS_DE_SEGURIDAD.md): autenticación, autorización, roles, permisos y tokens.

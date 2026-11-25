@@ -52,6 +52,8 @@ public class PreparacionInventarioImpl implements PreparacionInventario {
                 demo.motivo());
         movimiento.setFecha(demo.fecha());
         movimiento.setCantidad(demo.cantidad());
+        // V9 exige cantidad_base en ENTRADA/CONSUMO; el historial demo ya está en unidad base.
+        movimiento.setCantidadBase(demo.cantidad());
         movimiento.setCostoUnitario(demo.costoUnitario());
         movimiento.setConsumoId(demo.consumoId());
         return movimiento;

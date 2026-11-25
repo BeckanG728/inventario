@@ -51,7 +51,8 @@ class ReporteMovimientosServiceImplTest {
     private MovimientoDetalle movimiento(long id, TipoMovimiento tipo, boolean productoActivo) {
         return new MovimientoDetalle(
                 id, Instant.parse("2026-01-10T00:00:00Z"), tipo, 2, -5, 10, 5,
-                null, "motivo", 1L, "P-1", "Filtro de aceite", null, 2L, "mecanico");
+                null, "motivo", 1L, "P-1", "Filtro de aceite", null, 2L, "mecanico",
+                null, null, null);
     }
 
     // ---------- RN405: validación del rango de fechas ----------

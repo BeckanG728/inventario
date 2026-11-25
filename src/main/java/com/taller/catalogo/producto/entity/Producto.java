@@ -2,6 +2,7 @@ package com.taller.catalogo.producto.entity;
 
 import com.taller.catalogo.categoria.entity.Categoria;
 import com.taller.catalogo.proveedor.entity.Proveedor;
+import com.taller.catalogo.unidad.entity.Unidad;
 import com.taller.compartido.exception.StockInsuficienteException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -36,9 +37,6 @@ public class Producto {
     @Column(length = 500)
     private String descripcion;
 
-    @Column(name = "unidad_medida", nullable = false, length = 30)
-    private String unidadMedida;
-
     @Column(name = "stock_actual", nullable = false)
     private Integer stockActual = 0;
 
@@ -59,14 +57,27 @@ public class Producto {
     @JoinColumn(name = "proveedor_id", nullable = false)
     private Proveedor proveedor;
 
+    /** Unidad base de inventario: inmutable una vez registrado el primer movimiento. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "unidad_base_id")
+    private Unidad unidadBase;
+
+    /** Presentación comercial habitual; el factor real se registra en cada movimiento. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "unidad_presentacion_id")
+    private Unidad unidadPresentacion;
+
+    @Column(name = "factor_presentacion")
+    private Integer factorPresentacion;
+
     protected Producto() {
     }
 
-    public Producto(String codigo, String nombre, String unidadMedida, Integer stockMinimo,
+    public Producto(String codigo, String nombre, Unidad unidadBase, Integer stockMinimo,
                     Categoria categoria, Proveedor proveedor) {
         this.codigo = codigo;
         this.nombre = nombre;
-        this.unidadMedida = unidadMedida;
+        this.unidadBase = unidadBase;
         this.stockMinimo = stockMinimo;
         this.categoria = categoria;
         this.proveedor = proveedor;

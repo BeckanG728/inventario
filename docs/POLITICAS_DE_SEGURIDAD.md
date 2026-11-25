@@ -71,6 +71,7 @@ responsabilidades operativas dentro de sus módulos.
 | Productos (consulta) | `GET /api/productos` | ❌ | ✅ | ✅ | — |
 | Existencias | `GET /api/monitoreo/existencias` | ❌ | ✅ | ✅ | — |
 | Combobox de filtros | `GET /api/categorias/activos`, `GET /api/proveedores/activos` | ❌ | ✅ | ✅ | — |
+| Unidades | `GET /api/unidades`, `GET /api/categorias/{id}/unidades` | ✅ | ✅ | ✅ | — |
 | Entradas y ajustes | `POST /api/movimientos/entrada`, `POST /api/movimientos/ajuste` | ❌ | ✅ | ❌ | — |
 | Consumos | `POST /api/consumos` | ❌ | ✅ | ✅ | — |
 | Alertas | `GET /api/monitoreo/alertas` | ❌ | ✅ | ✅ | — |

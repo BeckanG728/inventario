@@ -1,5 +1,6 @@
 package com.taller.catalogo.producto.entity;
 
+import com.taller.catalogo.unidad.entity.Unidad;
 import com.taller.compartido.exception.StockInsuficienteException;
 import org.junit.jupiter.api.Test;
 
@@ -12,7 +13,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class ProductoTest {
 
     private Producto productoConStock(int stockActual) {
-        Producto producto = new Producto("FILT-01", "Filtro Aceite", "UND", 10, null, null);
+        Producto producto = new Producto("FILT-01", "Filtro Aceite",
+                new Unidad("UND", "Unidad", false), 10, null, null);
         producto.setStockActual(stockActual);
         return producto;
     }

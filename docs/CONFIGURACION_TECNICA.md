@@ -122,7 +122,7 @@ espera. La transacción garantiza que no se produzcan descuentos parciales.
 | Elemento | Decisión | Origen |
 |----------|----------|--------|
 | Motor | PostgreSQL | Arquitectura |
-| Migraciones | Flyway habilitado, con migraciones versionadas `V1` a `V5` | Arquitectura |
+| Migraciones | Flyway habilitado, con migraciones versionadas `V1` a `V10`; V9 crea el catálogo de unidades y V10 retira `producto.unidad_medida` y siembra las 10 categorías base con sus relaciones `categoria_unidad` | Arquitectura |
 | Esquema | `spring.jpa.hibernate.ddl-auto: validate`; el esquema se define en las migraciones | Arquitectura |
 | Acceso a datos | Spring Data JPA; `open-in-view: false` | Arquitectura |
 | Stock | `stockActual` y `stockMinimo` como enteros; el stock inicial es 0 | RN106 |
@@ -147,7 +147,7 @@ regenera si cambian categoría o producto.
 | Seguridad sin estado | Filtro JWT antes del filtro de autenticación de Spring; CSRF deshabilitado; sesiones `STATELESS`. |
 | Rate limiting | `LoginRateLimitFilter` antes de `JwtAuthFilter` (IP y username) y `UsuarioRateLimitFilter` después (usuario de la BD). Estado en memoria detrás de `RateLimitStore`. |
 | Manejo de errores | `ErrorCode` y `compartido/error` unifican el contrato para `GlobalExceptionHandler`, `ErrorResponseWriter`, seguridad, rate limiting y auditoría; ver [TABLA_ERRORES.md](TABLA_ERRORES.md). |
-| Datos demo | `DemoData` mantiene catálogos relacionales: tipo → categoría, unidades, costos y cantidades por reposición. Unidad, categoría y costo se derivan del tipo, no se eligen al azar. Los consumos se generan desde `SERVICIOS`, excluyendo herramientas. Entradas, consumos y ajustes se planifican como eventos y se procesan en orden cronológico a lo largo de 540 días (apertura concentrada al inicio, reposiciones repartidas), con `costoUnitario` en los tres tipos, para que los reportes de costos por período tengan datos coherentes. |
+| Datos demo | `DemoData` mantiene catálogos relacionales: tipo → categoría, unidades, costos y cantidades por reposición. Unidad, categoría y costo se derivan del tipo, no se eligen al azar. Las unidades del demo se traducen a los códigos de negocio sembrados en V9/V10 (`UND`, `GALON`, `BOTELLA`, `TUBO`, `CAJA`, ...): cada tipo tiene una sola unidad base discreta (`UND` o el envase del producto) y varía la presentación y su factor, a veces sin ninguna; nunca se usa un volumen o un peso como base. Los costos, cantidades de reposición y consumos están expresados en la unidad base; el stock mínimo parte de la mitad de la reposición mínima del tipo y los ajustes escalan su stock objetivo al tamaño de reposición del tipo. `DemoDataService` reutiliza las categorías base y las relaciones `categoria_unidad` sembradas en V10; no crea categorías ni relaciones. Los consumos se generan desde `SERVICIOS`, excluyendo herramientas. Entradas, consumos y ajustes se planifican como eventos y se procesan en orden cronológico a lo largo de 540 días (apertura concentrada al inicio, reposiciones repartidas), con `costoUnitario` en los tres tipos, para que los reportes de costos por período tengan datos coherentes. |
 | Prefijo de API | `/api`; respuestas JSON; fechas `Instant` en UTC. |
 
 ## 8. Verificación

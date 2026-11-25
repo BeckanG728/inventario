@@ -19,7 +19,10 @@ public record MovimientoResponse(
         String motivo,
         Long productoId,
         Long consumoId,
-        Long usuarioId
+        Long usuarioId,
+        String unidadRegistro,
+        Integer factorAplicado,
+        Integer cantidadBase
 ) {
 
     public static MovimientoResponse from(MovimientoInventario movimiento) {
@@ -35,7 +38,10 @@ public record MovimientoResponse(
                 movimiento.getMotivo(),
                 movimiento.getProductoId(),
                 movimiento.getConsumoId(),
-                movimiento.getUsuarioId());
+                movimiento.getUsuarioId(),
+                movimiento.getUnidadRegistro(),
+                movimiento.getFactorAplicado(),
+                movimiento.getCantidadBase());
     }
 
     public static MovimientoResponse from(MovimientoDetalle movimiento) {
@@ -51,6 +57,9 @@ public record MovimientoResponse(
                 movimiento.motivo(),
                 movimiento.productoId(),
                 movimiento.consumoId(),
-                movimiento.usuarioId());
+                movimiento.usuarioId(),
+                movimiento.unidadRegistro(),
+                movimiento.factorAplicado(),
+                movimiento.cantidadBase());
     }
 }

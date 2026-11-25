@@ -7,7 +7,6 @@ public record ProductoResponse(
         String codigo,
         String nombre,
         String descripcion,
-        String unidadMedida,
         Integer stockActual,
         Integer stockMinimo,
         boolean stockCritico,
@@ -16,6 +15,12 @@ public record ProductoResponse(
         Long categoriaId,
         String categoriaNombre,
         Long proveedorId,
-        String proveedorRazonSocial
+        String proveedorRazonSocial,
+        Long unidadBaseId,
+        String unidadBaseCodigo,
+        String unidadBaseNombre,
+        Long unidadPresentacionId,
+        String unidadPresentacionCodigo,
+        Integer factorPresentacion
 ) {
 }

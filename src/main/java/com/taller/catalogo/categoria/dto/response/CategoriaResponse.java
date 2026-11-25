@@ -1,10 +1,17 @@
 package com.taller.catalogo.categoria.dto.response;
 
 import com.taller.catalogo.categoria.entity.Categoria;
+import com.taller.catalogo.unidad.dto.response.UnidadResponse;
 
-public record CategoriaResponse(Long id, String nombre, String descripcion, boolean activo) {
+import java.util.List;
+
+public record CategoriaResponse(Long id, String nombre, String descripcion, boolean activo,
+                               List<UnidadResponse> unidades) {
 
     public static CategoriaResponse from(Categoria c) {
-        return new CategoriaResponse(c.getId(), c.getNombre(), c.getDescripcion(), c.isActivo());
+        List<UnidadResponse> unidades = c.getUnidades() == null
+                ? List.of()
+                : c.getUnidades().stream().map(UnidadResponse::from).toList();
+        return new CategoriaResponse(c.getId(), c.getNombre(), c.getDescripcion(), c.isActivo(), unidades);
     }
 }

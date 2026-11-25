@@ -16,9 +16,15 @@ public record CreateProductoRequest(
         @Size(max = 500, message = "La descripción no puede superar los 500 caracteres")
         String descripcion,
 
-        @NotBlank(message = "La unidad de medida es obligatoria")
-        @Size(max = 30, message = "La unidad de medida no puede superar los 30 caracteres")
-        String unidadMedida,
+        @NotNull(message = "La unidad base es obligatoria")
+        @Positive(message = "El id de unidad base debe ser mayor que cero")
+        Long unidadBaseId,
+
+        @Positive(message = "El id de unidad de presentación debe ser mayor que cero")
+        Long unidadPresentacionId,
+
+        @Positive(message = "El factor de presentación debe ser mayor que cero")
+        Integer factorPresentacion,
 
         @NotNull(message = "El stock mínimo es obligatorio")
         @Min(value = 0, message = "El stock mínimo no puede ser negativo")

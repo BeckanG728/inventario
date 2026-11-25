@@ -8,6 +8,8 @@ import com.taller.catalogo.producto.repository.ProductoRepository;
 import com.taller.catalogo.producto.service.CodigoGenerator;
 import com.taller.catalogo.proveedor.entity.Proveedor;
 import com.taller.catalogo.proveedor.repository.ProveedorRepository;
+import com.taller.catalogo.unidad.entity.Unidad;
+import com.taller.catalogo.unidad.repository.UnidadRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,14 +27,19 @@ public class PreparacionCatalogoImpl implements PreparacionCatalogo {
     private final CategoriaRepository categoriaRepository;
     private final ProveedorRepository proveedorRepository;
     private final ProductoRepository productoRepository;
+    private final UnidadRepository unidadRepository;
 
     @Override
     @Transactional
     public List<Long> crearCategorias(List<CategoriaDemo> categorias) {
         List<Long> ids = new ArrayList<>(categorias.size());
         for (CategoriaDemo categoria : categorias) {
-            ids.add(categoriaRepository.save(
-                    new Categoria(nombreCategoriaUnico(categoria.nombre()), categoria.descripcion())).getId());
+            // V10 siembra las categorías base con sus unidades: el demo solo las reutiliza y nunca
+            // crea categorías ni relaciones categoría-unidad por su cuenta.
+            Categoria existente = categoriaRepository.findByNombreIgnoreCase(categoria.nombre())
+                    .orElseThrow(() -> new IllegalStateException(
+                            "FATAL: la categoría base " + categoria.nombre() + " no existe, revisar V10"));
+            ids.add(existente.getId());
         }
         return ids;
     }
@@ -72,13 +79,23 @@ public class PreparacionCatalogoImpl implements PreparacionCatalogo {
 
             String prefijo = CodigoGenerator.prefijo(categoria.getNombre());
             int correlativo = correlativos.merge(prefijo, 1, Integer::sum);
+            Unidad unidadBase = unidadRepository.findByCodigoIgnoreCase(producto.unidadBaseCodigo())
+                    .orElseThrow(() -> new IllegalStateException(
+                            "Unidad base demo no encontrada: " + producto.unidadBaseCodigo()));
             Producto entidad = new Producto(
                     CodigoGenerator.generar(prefijo, correlativo),
                     producto.nombre(),
-                    producto.unidadMedida(),
+                    unidadBase,
                     producto.stockMinimo(),
                     categoria,
                     proveedor);
+            if (producto.unidadPresentacionCodigo() != null) {
+                Unidad presentacion = unidadRepository.findByCodigoIgnoreCase(producto.unidadPresentacionCodigo())
+                        .orElseThrow(() -> new IllegalStateException(
+                                "Unidad de presentación demo no encontrada: " + producto.unidadPresentacionCodigo()));
+                entidad.setUnidadPresentacion(presentacion);
+                entidad.setFactorPresentacion(producto.factorPresentacion());
+            }
             entidad.setDescripcion(producto.descripcion());
             entidad.setCostoUltimaCompra(producto.costoUltimaCompra());
             nuevos.add(entidad);
@@ -107,14 +124,5 @@ public class PreparacionCatalogoImpl implements PreparacionCatalogo {
     @Transactional(readOnly = true)
     public boolean hayProductos() {
         return productoRepository.count() > 0;
-    }
-
-    private String nombreCategoriaUnico(String base) {
-        String nombre = base;
-        int sufijo = 1;
-        while (categoriaRepository.existsByNombreIgnoreCase(nombre)) {
-            nombre = base + " " + sufijo++;
-        }
-        return nombre;
     }
 }

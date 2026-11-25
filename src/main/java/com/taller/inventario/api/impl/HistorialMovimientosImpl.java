@@ -141,6 +141,9 @@ public class HistorialMovimientosImpl implements HistorialMovimientos {
                 producto == null ? null : producto.nombre(),
                 m.getConsumoId(),
                 m.getUsuarioId(),
-                username);
+                username,
+                m.getUnidadRegistro(),
+                m.getFactorAplicado(),
+                m.getCantidadBase());
     }
 }

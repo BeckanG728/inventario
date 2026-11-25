@@ -6,8 +6,11 @@ import com.taller.catalogo.categoria.entity.Categoria;
 import com.taller.catalogo.categoria.repository.CategoriaRepository;
 import com.taller.catalogo.categoria.service.CategoriaService;
 import com.taller.catalogo.categoria.specification.CategoriaSpecification;
+import com.taller.catalogo.unidad.entity.Unidad;
+import com.taller.catalogo.unidad.repository.UnidadRepository;
 import com.taller.compartido.exception.DuplicateResourceException;
 import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -24,6 +27,7 @@ public class CategoriaServiceImpl implements CategoriaService {
     private static final int TAMANO_PAGINA_MAXIMO = 100;
 
     private final CategoriaRepository repository;
+    private final UnidadRepository unidadRepository;
 
     /** US-05 / RN102: nombre obligatorio y único. */
     @Override
@@ -36,7 +40,13 @@ public class CategoriaServiceImpl implements CategoriaService {
         if (repository.existsByNombreIgnoreCase(nombre)) {
             throw new DuplicateResourceException("Ya existe una categoría con el nombre " + nombre);
         }
-        Categoria saved = repository.save(new Categoria(nombre, blankToNull(request.descripcion())));
+        // Las unidades base y sus relaciones las siembra V10. Una categoría nueva parte solo con UND,
+        // la unidad mínima segura; el usuario no crea ni asigna unidades.
+        Unidad und = unidadRepository.findByCodigoIgnoreCase("UND")
+                .orElseThrow(() -> new IllegalStateException("FATAL: la unidad UND no existe, revisar V9"));
+        Categoria categoria = new Categoria(nombre, blankToNull(request.descripcion()));
+        categoria.reemplazarUnidades(Set.of(und));
+        Categoria saved = repository.save(categoria);
         return CategoriaResponse.from(saved);
     }
 

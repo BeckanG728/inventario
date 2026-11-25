@@ -14,5 +14,7 @@ public interface ProductoService {
 
     ProductoResponse desactivar(Long id);
 
+    ProductoResponse activar(Long id);
+
     Page<ProductoResponse> listar(int page, int size, ProductoFiltro filtro);
 }

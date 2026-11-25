@@ -52,6 +52,18 @@ public class MovimientoInventario {
     @Column(name = "usuario_id", nullable = false)
     private Long usuarioId;
 
+    /** Unidad en la que el usuario expresó la operación (snapshot, sin FK). */
+    @Column(name = "unidad_registro", length = 20)
+    private String unidadRegistro;
+
+    /** Factor aplicado en la conversión (snapshot). */
+    @Column(name = "factor_aplicado")
+    private Integer factorAplicado;
+
+    /** Cantidad ya expresada en la unidad base del producto (snapshot). */
+    @Column(name = "cantidad_base")
+    private Integer cantidadBase;
+
     protected MovimientoInventario() {
     }
 

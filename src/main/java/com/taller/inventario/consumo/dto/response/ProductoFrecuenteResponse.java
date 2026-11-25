@@ -11,14 +11,16 @@ public record ProductoFrecuenteResponse(
         Long productoId,
         String codigo,
         String nombre,
-        String unidadMedida,
         Integer stockActual,
         Integer stockMinimo,
         boolean stockCritico,
         EstadoStock estadoStock,
         String categoriaNombre,
         long vecesConsumido,
-        long unidadesConsumidas
+        long unidadesConsumidas,
+        String unidadBaseCodigo,
+        String unidadPresentacionCodigo,
+        Integer factorPresentacion
 ) {
 
     public static ProductoFrecuenteResponse desde(ProductoResponse producto,
@@ -27,13 +29,15 @@ public record ProductoFrecuenteResponse(
                 producto.id(),
                 producto.codigo(),
                 producto.nombre(),
-                producto.unidadMedida(),
                 producto.stockActual(),
                 producto.stockMinimo(),
                 producto.stockCritico(),
                 EstadoStock.de(producto.stockActual(), producto.stockMinimo()),
                 producto.categoriaNombre(),
                 vecesConsumido,
-                unidadesConsumidas);
+                unidadesConsumidas,
+                producto.unidadBaseCodigo(),
+                producto.unidadPresentacionCodigo(),
+                producto.factorPresentacion());
     }
 }

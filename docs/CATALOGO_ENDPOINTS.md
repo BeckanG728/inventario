@@ -38,6 +38,8 @@ y [REQUISITOS_FUNCIONALES.md](REQUISITOS_FUNCIONALES.md).
 | Catálogo        | POST   | `/api/categorias`                    |  ❌   |     ✅      |    ❌    |    —    |
 | Catálogo        | GET    | `/api/categorias`                    |  ❌   |     ✅      |    ❌    |    —    |
 | Catálogo        | GET    | `/api/categorias/activos`            |  ❌   |     ✅      |    ✅    |    —    |
+| Catálogo        | GET    | `/api/categorias/{id}/unidades`      |  ❌   |     ✅      |    ✅    |    —    |
+| Unidades        | GET    | `/api/unidades`                      |  ✅   |     ✅      |    ✅    |    —    |
 | Catálogo        | POST   | `/api/proveedores`                   |  ❌   |     ✅      |    ❌    |    —    |
 | Catálogo        | GET    | `/api/proveedores`                   |  ❌   |     ✅      |    ❌    |    —    |
 | Catálogo        | GET    | `/api/proveedores/activos`           |  ❌   |     ✅      |    ✅    |    —    |
@@ -46,6 +48,7 @@ y [REQUISITOS_FUNCIONALES.md](REQUISITOS_FUNCIONALES.md).
 | Productos       | PUT    | `/api/productos/{id}`                |  ❌   |     ✅      |    ❌    |    —    |
 | Productos       | PUT    | `/api/productos/{id}/stock-minimo`   |  ❌   |     ✅      |    ❌    |    —    |
 | Productos       | PATCH  | `/api/productos/{id}/desactivar`     |  ❌   |     ✅      |    ❌    |    —    |
+| Productos       | PATCH  | `/api/productos/{id}/activar`        |  ❌   |     ✅      |    ❌    |    —    |
 | Monitoreo       | GET    | `/api/monitoreo/existencias`                   |  ❌   |     ✅      |    ✅    |    —    |
 | Inventario      | POST   | `/api/movimientos/entrada`                      |  ❌   |     ✅      |    ❌    |    —    |
 | Inventario      | POST   | `/api/movimientos/ajuste`                       |  ❌   |     ✅      |    ❌    |    —    |
@@ -267,20 +270,22 @@ las variables están listadas en `.env.example`.
 
 ### 4.1 POST `/api/categorias`
 
-Crea una categoría. El nombre es obligatorio y único sin distinguir mayúsculas/minúsculas.
+Crea una categoría. El nombre es obligatorio y único sin distinguir mayúsculas/minúsculas. El usuario no elige
+unidades: las categorías base y sus unidades válidas las siembra la migración V10, y toda categoría nueva se crea con
+la unidad `UND` (RN503). El producto solo podrá usar unidades asociadas a su categoría.
 
 - **Acceso:** `JEFE_TALLER`
 - **Body:**
 
-| Campo         | Tipo   | Obligatorio | Validación                      |
-|---------------|--------|-------------|---------------------------------|
-| `nombre`      | string | Sí          | No vacío, máximo 100 caracteres |
-| `descripcion` | string | No          | Máximo 255 caracteres           |
+| Campo         | Tipo    | Obligatorio | Validación                                    |
+|---------------|---------|-------------|-----------------------------------------------|
+| `nombre`      | string  | Sí          | No vacío, máximo 100 caracteres               |
+| `descripcion` | string  | No          | Máximo 255 caracteres                         |
 
 ```json
 {
-  "nombre": "Filtros",
-  "descripcion": "Filtros de aceite y aire"
+  "nombre": "Cables",
+  "descripcion": "Cables y conectores"
 }
 ```
 
@@ -288,10 +293,13 @@ Crea una categoría. El nombre es obligatorio y único sin distinguir mayúscula
 
 ```json
 {
-  "id": 3,
-  "nombre": "Filtros",
-  "descripcion": "Filtros de aceite y aire",
-  "activo": true
+  "id": 21,
+  "nombre": "Cables",
+  "descripcion": "Cables y conectores",
+  "activo": true,
+  "unidades": [
+    { "id": 1, "codigo": "UND", "nombre": "Unidad", "permiteFragmentacion": false }
+  ]
 }
 ```
 
@@ -372,7 +380,9 @@ la categoría `Filtros`). El cliente no lo envía ni lo edita.
 |----------------|---------|-------------|-------------------------------------------------|
 | `nombre`       | string  | Sí          | No vacío, máximo 150 caracteres                 |
 | `descripcion`  | string  | No          | Máximo 500 caracteres                           |
-| `unidadMedida` | string  | Sí          | No vacío, máximo 30 caracteres                  |
+| `unidadBaseId` | integer | Sí          | `> 0`; unidad activa y válida para la categoría |
+| `unidadPresentacionId` | integer | No   | Presentación (`permiteFragmentacion = true`) válida para la categoría; si se omite, no hay presentación |
+| `factorPresentacion` | integer | Si hay presentación | `> 0`; unidades base por presentación. Se omite si no hay presentación |
 | `stockMinimo`  | integer | Sí          | `>= 0`                                          |
 | `id_categoria` | integer | Sí          | `> 0`; la categoría debe existir y estar activa |
 | `id_proveedor` | integer | Sí          | `> 0`; el proveedor debe existir y estar activo |
@@ -383,7 +393,7 @@ Los campos `id_categoria` e `id_proveedor` aceptan como alias `idCategoria`/`cat
 {
   "nombre": "Filtro de aceite",
   "descripcion": "Filtro para motor 1.6L",
-  "unidadMedida": "UNIDAD",
+  "unidadBaseId": 1,
   "stockMinimo": 10,
   "id_categoria": 3,
   "id_proveedor": 7
@@ -410,7 +420,7 @@ Lista productos con paginación y filtros opcionales.
 | `categoria`    | integer | No          | —       | Filtra por ID de categoría                                 |
 | `codigo`       | string  | No          | —       | Búsqueda parcial por código, sin distinguir mayúsculas     |
 | `proveedor`    | integer | No          | —       | Filtra por ID de proveedor                                 |
-| `unidadMedida` | string  | No          | —       | Filtra por unidad de medida (comparación sin mayúsculas)   |
+| `unidadBaseId` | integer | No          | —       | Filtra por ID de unidad base                               |
 | `activo`       | boolean | No          | —       | Filtra por estado activo                                   |
 | `stockCritico` | boolean | No          | —       | `true` si `stockActual <= stockMinimo`; `false` en caso contrario |
 
@@ -425,7 +435,7 @@ Lista productos con paginación y filtros opcionales.
       "codigo": "FIL-0001",
       "nombre": "Filtro de aceite",
       "descripcion": "Filtro para motor 1.6L",
-      "unidadMedida": "UNIDAD",
+      "unidadBaseId": 1,
       "stockActual": 25,
       "stockMinimo": 10,
       "stockCritico": false,
@@ -469,7 +479,9 @@ Actualiza un producto completo.
 |----------------|---------|-------------|---------------------------------------|
 | `nombre`       | string  | Sí          | No vacío, máximo 150                  |
 | `descripcion`  | string  | No          | Máximo 500                            |
-| `unidadMedida` | string  | Sí          | No vacío, máximo 30                   |
+| `unidadBaseId` | integer | Sí          | `> 0`, existente y válida para la categoría |
+| `unidadPresentacionId` | integer | No   | Presentación (`permiteFragmentacion = true`) válida para la categoría; si se omite, se quita la presentación |
+| `factorPresentacion` | integer | Si hay presentación | `> 0`; unidades base por presentación. Se omite si no hay presentación |
 | `stockMinimo`  | integer | Sí          | `>= 0`                                |
 | `activo`       | boolean | No          | Si se omite, conserva el valor actual |
 | `id_categoria` | integer | Sí          | `> 0`, existente y activa             |
@@ -479,8 +491,9 @@ Actualiza un producto completo.
 - **Errores:** `400 VALIDATION_ERROR`, `401`, `403 FORBIDDEN`, `404 NOT_FOUND`.
 
 > El `codigo` no se envía ni se edita: lo genera el backend y permanece inmutable.
-> Si el producto ya tiene movimientos registrados, solo se permite cambiar `nombre`, `descripcion` y `unidadMedida`;
-> `stockMinimo`, `activo`, categoría y proveedor deben enviarse sin cambios (si no, `400`).
+> Si el producto ya tiene movimientos registrados, la unidad base es inmutable; solo se pueden cambiar `nombre`,
+> `descripcion`, presentación y factor. `stockMinimo`, `activo`, categoría y proveedor deben enviarse sin cambios
+> (si no, `400`).
 
 ---
 
@@ -523,6 +536,18 @@ Desactiva lógicamente un producto (`activo = false`).
 
 ---
 
+### 5.5.1 PATCH `/api/productos/{id}/activar`
+
+Reactiva un producto desactivado (`activo = true`). Es idempotente: si ya está activo, responde 200 sin cambios.
+
+- **Acceso:** `JEFE_TALLER`
+- **Path:** `id` (integer, obligatorio)
+- **Body:** ninguno.
+- **Respuesta 200 OK:** `ProductoResponse` con `activo: true`.
+- **Errores:** `400` si la categoría o el proveedor del producto están inactivos, `401`, `403 FORBIDDEN`, `404 NOT_FOUND`.
+
+---
+
 ### 5.6 Estructura `ProductoResponse`
 
 | Campo                  | Tipo    | Descripción                             |
@@ -531,7 +556,7 @@ Desactiva lógicamente un producto (`activo = false`).
 | `codigo`               | string  | Código generado (`AAA-nnnn`), inmutable |
 | `nombre`               | string  | Nombre                                  |
 | `descripcion`          | string  | Descripción                             |
-| `unidadMedida`         | string  | Unidad de medida                        |
+| `unidadBaseCodigo`     | string  | Unidad base (`UND`, `GALON`, `BOTELLA`, ...); ver también `unidadBaseId`/`unidadBaseNombre` |
 | `stockActual`          | integer | Stock actual                            |
 | `stockMinimo`          | integer | Stock mínimo configurado                |
 | `stockCritico`         | boolean | `stockActual <= stockMinimo`            |
@@ -794,7 +819,7 @@ consumidos, de modo que el usuario pueda agregarlos sin buscarlos en el catálog
     "productoId": 12,
     "codigo": "FIL-0001",
     "nombre": "Abrazadera Aston Martin Thema",
-    "unidadMedida": "UNIDAD",
+    "unidadBaseId": 1,
     "stockActual": 89,
     "stockMinimo": 10,
     "stockCritico": false,
@@ -1177,3 +1202,38 @@ reclasificación.
 Los detalles de validación se documentan en [VALIDACIONES.md](VALIDACIONES.md); las reglas de negocio en
 [REGLAS_DE_NEGOCIO.md](REGLAS_DE_NEGOCIO.md); y los requisitos funcionales en
 [REQUISITOS_FUNCIONALES.md](REQUISITOS_FUNCIONALES.md).
+
+## 13. Unidades (V9/V10)
+
+Las unidades y sus relaciones con las categorías son datos de negocio sembrados en las migraciones (unidades en V9;
+categorías base y relaciones `categoria_unidad` en V10). La API solo las consulta: no hay endpoints para crearlas,
+modificarlas, desactivarlas ni asignarlas a una categoría.
+
+| Endpoint | Método | Acceso | Descripción |
+|---|---|---|---|
+| `/api/unidades` | GET | ADMIN, JEFE_TALLER, MECANICO | Catálogo de unidades activas (`id`, `codigo`, `nombre`, `permiteFragmentacion`) |
+| `/api/categorias/{id}/unidades` | GET | JEFE_TALLER, MECANICO | Unidades válidas para esa categoría; alimenta el combobox del formulario de producto |
+
+`ProductoResponse` incorpora `unidadBaseId`, `unidadBaseCodigo`, `unidadBaseNombre`, `unidadPresentacionId`,
+`unidadPresentacionCodigo` y `factorPresentacion`. `CreateProductoRequest`/`UpdateProductoRequest` usan esos IDs;
+la columna `unidad_medida` fue eliminada en V10.
+
+`EntradaRequest`, `ConsumoItemRequest` y `AjusteRequest` aceptan `unidadRegistro`, `factorAplicado` y un campo
+`cantidadExacta`/`cantidadFisicaExacta` (decimal, solo para longitud). `MovimientoResponse` y los reportes incluyen
+`unidadRegistro`, `factorAplicado` y `cantidadBase`, todos como snapshot histórico.
+
+Ejemplo de entrada de 3 cajas de 20 unidades a costo 25 por caja:
+
+```json
+{
+  "productoId": 1,
+  "proveedorId": 2,
+  "cantidad": 3,
+  "unidadRegistro": "CAJA",
+  "factorAplicado": 20,
+  "costoUnitario": 25.00
+}
+```
+
+Respuesta: `cantidad = 60`, `cantidadBase = 60`, `variacion = 60`, `costoUnitario = 1.25`, `stockAnterior = 0`,
+`stockPosterior = 60`.
